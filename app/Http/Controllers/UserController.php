@@ -32,4 +32,12 @@ class UserController extends Controller
             'message' => 'User registered successfully!',
         ], 201);
     }
+
+    public function index(){
+        $users = User::all();
+
+        return response()->json([
+            'users'=> $users,
+        ]);
+    }
 }

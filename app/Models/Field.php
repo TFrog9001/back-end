@@ -32,5 +32,12 @@ class Field extends Model
     {
         return $this->hasMany(Booking::class, 'field_id');
     }
+
+    public function equipment()
+    {
+        return $this->belongsToMany(Equipment::class, 'equipment_field')
+                    ->withPivot('allocated_at')
+                    ->withTimestamps();
+    }
 }
 

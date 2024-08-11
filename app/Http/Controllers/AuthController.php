@@ -176,13 +176,13 @@ class AuthController extends Controller
         return $this->googleLoginService->handleGoogleCallback();
     }
 
-    public function redirectToFacebook()
-    {
-        return $this->facebookLoginService->redirectToFacebook();
-    }
+    // public function redirectToFacebook()
+    // {
+    //     return $this->facebookLoginService->redirectToFacebook();
+    // }
 
-    public function handleFacebookCallback()
-    {
-        return $this->facebookLoginService->handleFacebookCallback();
-    }
+    // public function handleFacebookCallback()
+    // {
+    //     return $this->facebookLoginService->handleFacebookCallback();
+    // }
 }
