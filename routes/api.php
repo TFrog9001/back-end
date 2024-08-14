@@ -20,20 +20,21 @@ use App\Http\Controllers\FieldController;
 use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\SupplyController;
 
+Route::post('/auth/register', [UserController::class, 'register']);
+Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/refresh', [AuthController::class, 'refresh']);
+
+
 
 Route::group([
-    'middleware' => 'api',
+    'middleware' => ['api','auth:api'],
 ], function () {
-
-    Route::post('/register', [UserController::class, 'register']);
 
     Route::group(
         [
             'prefix' => 'auth',
         ],
         function () {
-            Route::post('/login', [AuthController::class, 'login']);
-            Route::post('/refresh', [AuthController::class, 'refresh']);
             Route::post('/logout', [AuthController::class, 'logout']);
             Route::get('/me', [AuthController::class, 'me']);
             Route::post('/check/time', [AuthController::class, 'checkRefreshTokenExpiration']);
@@ -43,7 +44,7 @@ Route::group([
     );
 
     Route::group([
-        // 'middleware' => 'check.admin.staff',
+        'middleware' => ['check.admin', 'check.staff'],
     ], function () {
 
         Route::group(
@@ -89,7 +90,7 @@ Route::group([
 
 
         Route::group([
-            'middleware' => 'isAdmin',
+            'middleware' => 'check.admin',
         ], function () {
             // Route::resource('/roles', [RoleController::class]);
         });

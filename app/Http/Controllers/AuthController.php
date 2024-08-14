@@ -27,6 +27,7 @@ class AuthController extends Controller
         try {
             if (isset($request)) {
                 $customerMessages = [
+                    'email.email' => 'Định dạng email không đúng',
                     'email.required' => "Email không được để trống",
                     'password.required' => 'Mật khẩu không được để trống',
                     'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự',
@@ -41,7 +42,6 @@ class AuthController extends Controller
                 if ($validator->fails()) {
                     $errors = $validator->errors();
                     return response()->json([
-                        'status' => 'error',
                         'message' => 'Validation failed',
                         'errors' => $errors,
                     ], 442);
@@ -68,24 +68,35 @@ class AuthController extends Controller
     public function me()
     {
         try {
-            return response()->json(auth()->user());
+            return response()->json(['user' => auth()->user()]);
         } catch (JWTException $e) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
 
 
-    public function logout()
+    public function logout(Request $request)
     {
-        auth()->logout();
+        try {
+            $token = $request->bearerToken();
+            JWTAuth::setToken($token);
+            $payload = JWTAuth::getPayload();
 
-        return response()->json(['message' => 'Successfully logged out']);
+            // Kiểm tra xem đây có phải là access token không
+            if (!isset($payload['refresh']) || $payload['refresh'] !== true) {
+                auth()->logout();
+                return response()->json(['message' => 'Successfully logged out']);
+            } else {
+                return response()->json(['error' => 'Invalid token type for logout'], 400);
+            }
+        } catch (JWTException $e) {
+            return response()->json(['error' => 'Invalid token'], 401);
+        }
     }
-
 
     public function refresh(Request $request)
     {
-        $refreshToken = $request->refresh_Token;
+        $refreshToken = $request->bearerToken();
         try {
             $decoded = JWTAuth::getJWTProvider()->decode($refreshToken);
             $user = User::find($decoded['user_id']);
@@ -106,7 +117,10 @@ class AuthController extends Controller
                 }
             }
 
-            // auth()->invalidate();
+            
+            // auth()->invalidate($accessToken); 
+            auth()->invalidate();
+            
             $token = auth()->login($user);
             $refreshToken = $this->createRefreshToken();
             return $this->respondWithToken($token, $refreshToken, $decoded['user_id']);
@@ -119,7 +133,7 @@ class AuthController extends Controller
     protected function respondWithToken($token, $refreshToken, $userId)
     {
         return response()->json([
-            'access_token' => $token,
+            'token' => $token,
             'refresh_token' => $refreshToken,
             'user_id' => $userId,
             'token_type' => 'bearer',
@@ -130,9 +144,13 @@ class AuthController extends Controller
     private function createRefreshToken()
     {
         $data = [
+            'sub' => auth()->user()->id, // Sử dụng 'sub' như một standard claim cho subject
             'user_id' => auth()->user()->id,
             'random' => rand() . time(),
-            'exp' => time() + config('jwt.refresh_ttl')
+            'exp' => time() + config('jwt.refresh_ttl'), // Expiry time
+            'iat' => time(), // Issued at time
+            'iss' => config('app.url'), // Issuer claim (thường là URL của ứng dụng)
+            'refresh' => true
         ];
 
         $refreshToken = JWTAuth::getJWTProvider()->encode($data);
