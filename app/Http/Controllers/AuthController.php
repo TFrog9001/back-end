@@ -126,18 +126,6 @@ class AuthController extends Controller
                     "message" => "User Invalid"
                 ], 404);
             }
-            $accessToken = $request->bearerToken();
-            if ($accessToken) {
-                try {
-                    JWTAuth::setToken($accessToken);
-                    $payload = JWTAuth::getPayload();
-                    auth()->invalidate();
-                } catch (JWTException $e) {
-                    return response()->json(['message' => $e->getMessage()], 500);
-                }
-            }
-
-            auth()->invalidate();
             $token = auth()->login($user);
             $refreshToken = $this->createRefreshToken();
             return $this->respondWithToken($token, $refreshToken, $decoded['user_id']);
