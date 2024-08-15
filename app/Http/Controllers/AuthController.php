@@ -11,12 +11,13 @@ use App\Services\GoogleLoginService;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 
+
 class AuthController extends Controller
 {
     protected $googleLoginService;
     public function __construct(GoogleLoginService $googleLoginService)
     {
-        $this->middleware('auth:api', ['except' => ['login', 'refresh', 'checkRefreshTokenExpiration', 'redirectToGoogle', 'handleGoogleCallback']]);
+        $this->middleware('auth:api', ['except' => ['login', 'refresh', 'checkRefreshTokenExpiration', 'redirectToGoogle', 'handleGoogleCallback','handleFacebookCallback']]);
         $this->googleLoginService = $googleLoginService;
     }
 
@@ -25,9 +26,8 @@ class AuthController extends Controller
     {
         // $credentials = request(['email', 'password']);
         try {
-            if (isset($request)) {
+            if (isset($request->email)) {
                 $customerMessages = [
-                    'email.email' => 'Định dạng email không đúng',
                     'email.required' => "Email không được để trống",
                     'password.required' => 'Mật khẩu không được để trống',
                     'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự',
@@ -42,6 +42,7 @@ class AuthController extends Controller
                 if ($validator->fails()) {
                     $errors = $validator->errors();
                     return response()->json([
+                        'status' => 'error',
                         'message' => 'Validation failed',
                         'errors' => $errors,
                     ], 442);
@@ -54,6 +55,39 @@ class AuthController extends Controller
                 $user_id = auth()->user()->id;
                 $refreshToken = $this->createRefreshToken();
                 return $this->respondWithToken($token, $refreshToken, $user_id);
+            } else {
+                $customerMessages = [
+                    'username.required' => "Email không được để trống",
+                    'password.required' => 'Mật khẩu không được để trống',
+                    'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự',
+                    'password.max' => 'Mật khẩu tối đa 32 ký tự',
+                ];
+
+                $validator = Validator::make($request->all(), [
+                    'username' => 'required',
+                    'password' => 'required|min:8|max:32'
+                ], $customerMessages);
+
+                if ($validator->fails()) {
+                    $errors = $validator->errors();
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Validation failed',
+                        'errors' => $errors,
+                    ], 442);
+                } else {
+                    $credentials = $request->only('username', 'password');
+                }
+                if (!$token = auth()->attempt($credentials)) {
+                    return response()->json(['error' => 'Username or password is incorrect'], 500);
+                }
+                $user_id = auth()->user()->id;
+
+                if (auth()->user()->roles != 'super_admin' && auth()->user()->roles != 'admin' && auth()->user()->roles != 'support') {
+                    return response()->json(['error' => 'You do not have permission to login'], 442);
+                }
+                $refreshToken = $this->createRefreshToken();
+                return $this->respondWithToken($token, $refreshToken, $user_id);
             }
         } catch (\Exception $e) {
             return response()->json([
@@ -62,8 +96,6 @@ class AuthController extends Controller
             ], 500);
         }
     }
-
-
 
     public function me()
     {
@@ -75,24 +107,13 @@ class AuthController extends Controller
     }
 
 
-    public function logout(Request $request)
+    public function logout()
     {
-        try {
-            $token = $request->bearerToken();
-            JWTAuth::setToken($token);
-            $payload = JWTAuth::getPayload();
+        auth()->logout();
 
-            // Kiểm tra xem đây có phải là access token không
-            if (!isset($payload['refresh']) || $payload['refresh'] !== true) {
-                auth()->logout();
-                return response()->json(['message' => 'Successfully logged out']);
-            } else {
-                return response()->json(['error' => 'Invalid token type for logout'], 400);
-            }
-        } catch (JWTException $e) {
-            return response()->json(['error' => 'Invalid token'], 401);
-        }
+        return response()->json(['message' => 'Successfully logged out']);
     }
+
 
     public function refresh(Request $request)
     {
@@ -111,16 +132,12 @@ class AuthController extends Controller
                     JWTAuth::setToken($accessToken);
                     $payload = JWTAuth::getPayload();
                     auth()->invalidate();
-                } catch (TokenExpiredException $e) {
                 } catch (JWTException $e) {
                     return response()->json(['message' => $e->getMessage()], 500);
                 }
             }
 
-            
-            // auth()->invalidate($accessToken); 
             auth()->invalidate();
-            
             $token = auth()->login($user);
             $refreshToken = $this->createRefreshToken();
             return $this->respondWithToken($token, $refreshToken, $decoded['user_id']);
@@ -144,13 +161,9 @@ class AuthController extends Controller
     private function createRefreshToken()
     {
         $data = [
-            'sub' => auth()->user()->id, // Sử dụng 'sub' như một standard claim cho subject
             'user_id' => auth()->user()->id,
             'random' => rand() . time(),
-            'exp' => time() + config('jwt.refresh_ttl'), // Expiry time
-            'iat' => time(), // Issued at time
-            'iss' => config('app.url'), // Issuer claim (thường là URL của ứng dụng)
-            'refresh' => true
+            'exp' => time() + config('jwt.refresh_ttl')
         ];
 
         $refreshToken = JWTAuth::getJWTProvider()->encode($data);
@@ -193,14 +206,4 @@ class AuthController extends Controller
     {
         return $this->googleLoginService->handleGoogleCallback();
     }
-
-    // public function redirectToFacebook()
-    // {
-    //     return $this->facebookLoginService->redirectToFacebook();
-    // }
-
-    // public function handleFacebookCallback()
-    // {
-    //     return $this->facebookLoginService->handleFacebookCallback();
-    // }
 }
