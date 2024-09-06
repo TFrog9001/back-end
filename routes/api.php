@@ -27,7 +27,7 @@ Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 
 
 Route::group([
-    'middleware' => ['api','auth:api'],
+    // 'middleware' => ['api','auth:api'],
 ], function () {
 
     Route::group(
@@ -44,7 +44,7 @@ Route::group([
     );
 
     Route::group([
-        'middleware' => ['check.admin', 'check.staff'],
+        // 'middleware' => ['check.admin', 'check.staff'],
     ], function () {
 
         Route::group(
@@ -53,8 +53,10 @@ Route::group([
             ],
             function () {
                 Route::get('', [UserController::class, 'index']);
-                Route::get('/all', [UserController::class, 'getAll']);
                 Route::get('/{id}', [UserController::class, 'show']);
+                Route::post('', [UserController::class, 'addUser']);
+                Route::post('/{id}', [UserController::class, 'editUser']);
+                Route::delete('/{id}', [UserController::class, 'delete']);
             }
         );
 
