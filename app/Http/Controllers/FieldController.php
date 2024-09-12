@@ -29,7 +29,6 @@ class FieldController extends Controller
             // Bước 1: Xác thực dữ liệu đầu vào
             $validatedData = $request->validate([
                 'name' => 'required|string|max:255',
-                'location' => 'required|string|max:255',
                 'type' => 'required|in:11,7,5',
                 'status' => 'required|in:Hoạt động,Đang sửa chữa,Không hoạt động',
                 'prices' => 'required|array',
@@ -98,12 +97,11 @@ class FieldController extends Controller
 
             $request->validate([
                 'name' => 'string|max:255',
-                'location' => 'string|max:255',
                 'type' => 'in:11,7,5',
                 'status' => 'in:Hoạt động,Đang sửa chữa,Không hoạt động',
             ]);
 
-            $field->update($request->only(['name', 'location', 'type', 'status']));
+            $field->update($request->only(['name', 'type', 'status']));
             return response()->json($field);
         } catch (ValidationException $e) {
             return response()->json(['errors' => $e->errors()], 422);

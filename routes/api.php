@@ -65,6 +65,7 @@ Route::group([
             'prefix' => 'fields',
         ], function () {
             Route::get('', [FieldController::class, 'index']);
+            Route::get('/{id}', [FieldController::class, 'show']);
             Route::post('', [FieldController::class, 'store']);
             Route::post('/{id}', [FieldController::class, 'update']);
             Route::delete('/{id}', [FieldController::class, 'delete']);

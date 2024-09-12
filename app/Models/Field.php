@@ -11,7 +11,7 @@ class Field extends Model
 
     protected $fillable = [
         'name',
-        'location',
+        // 'location',
         'type',
         'status',
         'description',
