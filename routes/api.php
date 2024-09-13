@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\FieldPriceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -72,6 +73,14 @@ Route::group([
         });
 
         Route::group([
+            'prefix' => 'prices',
+        ], function () {
+            Route::post('', [FieldPriceController::class, 'store']);
+            Route::post('/{id}', [FieldPriceController::class, 'update']);
+            Route::delete('/{id}', [FieldPriceController::class, 'delete']);
+        });
+
+        Route::group([
             'prefix' => 'equipments',
         ], function () {
             Route::get('', [EquipmentController::class, 'index']);
@@ -83,8 +92,8 @@ Route::group([
         });
 
         Route::group([
-            'prefix'=> 'supplies',
-        ], function(){
+            'prefix' => 'supplies',
+        ], function () {
             Route::get('', [SupplyController::class, 'index']);
             Route::post('', [SupplyController::class, 'store']);
             Route::post('/{id}', [SupplyController::class, 'update']);

@@ -4,18 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\FieldPrice;
 use Illuminate\Http\Request;
+use App\Models\Field;
 
 class FieldPriceController extends Controller
 {
-    /**
-     * Lấy danh sách tất cả các mức giá cho sân bóng.
-     */
-    public function index()
-    {
-        $prices = FieldPrice::with('field')->get();
-        return response()->json($prices);
-    }
-
     /**
      * Tạo một mức giá mới cho sân bóng.
      */
@@ -30,21 +22,8 @@ class FieldPriceController extends Controller
         ]);
 
         $price = FieldPrice::create($request->all());
-        return response()->json($price, 201);
-    }
-
-    /**
-     * Hiển thị thông tin mức giá cụ thể cho sân bóng.
-     */
-    public function show($id)
-    {
-        $price = FieldPrice::with('field')->find($id);
-
-        if (!$price) {
-            return response()->json(['message' => 'Field Price not found'], 404);
-        }
-
-        return response()->json($price);
+        $field = Field::with('prices')->findOrFail($request->field_id);
+        return response()->json($field, 201);
     }
 
     /**
@@ -73,7 +52,7 @@ class FieldPriceController extends Controller
     /**
      * Xóa một mức giá cụ thể cho sân bóng.
      */
-    public function destroy($id)
+    public function delete($id)
     {
         $price = FieldPrice::find($id);
 

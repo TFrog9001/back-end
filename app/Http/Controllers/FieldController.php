@@ -80,7 +80,11 @@ class FieldController extends Controller
     public function show($id)
     {
         try {
-            $field = Field::with('prices')->findOrFail($id); // Include prices for each field
+            $field = Field::with([
+                'prices' => function ($query) {
+                    $query->orderBy('start_time', 'asc'); // Sắp xếp tăng dần theo start_time
+                }
+            ])->findOrFail($id);
             return response()->json($field);
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Field not found'], 404);
@@ -96,7 +100,7 @@ class FieldController extends Controller
             $field = Field::findOrFail($id);
 
             $request->validate([
-                'name' => 'string|max:255',
+                'name' => 'string|max:50',
                 'type' => 'in:11,7,5',
                 'status' => 'in:Hoạt động,Đang sửa chữa,Không hoạt động',
             ]);
@@ -117,7 +121,7 @@ class FieldController extends Controller
     /**
      * Xóa một sân bóng cụ thể.
      */
-    public function destroy($id)
+    public function delete($id)
     {
         try {
             $field = Field::findOrFail($id);
