@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\FieldPrice;
 use Illuminate\Http\Request;
 use App\Models\Field;
+use Illuminate\Validation\ValidationException;
+
 
 class FieldPriceController extends Controller
 {
@@ -13,17 +15,21 @@ class FieldPriceController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'field_id' => 'required|exists:fields,id',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i|after:start_time',
-            // 'day_type' => 'required|in:Ngày thường,Cuối tuần,Ngày lễ',
-            'price' => 'required|numeric|min:0',
-        ]);
+        try {
+            $request->validate([
+                'field_id' => 'required|exists:fields,id',
+                'start_time' => 'required|date_format:H:i',
+                'end_time' => 'required|date_format:H:i|after:start_time',
+                // 'day_type' => 'required|in:Ngày thường,Cuối tuần,Ngày lễ',
+                'price' => 'required|numeric|min:0',
+            ]);
 
-        $price = FieldPrice::create($request->all());
-        $field = Field::with('prices')->findOrFail($request->field_id);
-        return response()->json($field, 201);
+            $price = FieldPrice::create($request->all());
+            $field = Field::with('prices')->findOrFail($request->field_id);
+            return response()->json($field, 201);
+        } catch (ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 422);
+        }
     }
 
     /**
