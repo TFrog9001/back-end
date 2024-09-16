@@ -31,7 +31,7 @@ class FieldController extends Controller
                 'name' => 'required|string|max:255',
                 'type' => 'required|in:11,7,5',
                 'status' => 'required|in:Hoạt động,Đang sửa chữa,Không hoạt động',
-                'prices' => 'array',
+                'prices' => 'required|array',
                 'prices.*.start_time' => 'required|date_format:H:i',
                 'prices.*.end_time' => 'required|date_format:H:i|after:prices.*.start_time',
                 'prices.*.price' => 'required|numeric|min:0',
