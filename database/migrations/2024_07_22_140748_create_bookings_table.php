@@ -18,7 +18,9 @@ return new class extends Migration
             $table->date('booking_date');
             $table->time('start_time');
             $table->time('end_time');
+            $table->decimal('field_price', 8, 2);
             $table->enum('status', ['Đã đặt', 'Đã thanh toán', 'Hủy'])->default('Đã đặt');
+            $table->decimal('deposit', 8, 2);
             $table->timestamps();
 
             $table->foreign('field_id')->references('id')->on('fields')->onDelete('cascade');

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BookingController;
 use App\Http\Controllers\FieldPriceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -48,12 +49,15 @@ Route::group([
         // 'middleware' => ['check.admin', 'check.staff'],
     ], function () {
 
+
         Route::group(
             [
                 'prefix' => 'users',
             ],
             function () {
                 Route::get('', [UserController::class, 'index']);
+                Route::get('/customers', [UserController::class, 'getCustomers']);
+
                 Route::get('/{id}', [UserController::class, 'show']);
                 Route::post('', [UserController::class, 'addUser']);
                 Route::post('/{id}', [UserController::class, 'editUser']);
@@ -78,6 +82,15 @@ Route::group([
             Route::post('', [FieldPriceController::class, 'store']);
             Route::post('/{id}', [FieldPriceController::class, 'update']);
             Route::delete('/{id}', [FieldPriceController::class, 'delete']);
+        });
+
+        Route::group([
+            'prefix' => 'bookings',
+        ], function () {
+            Route::get('', [BookingController::class, 'index']);
+            Route::post('', [BookingController::class, 'store']);
+            Route::post('/{id}', [BookingController::class, 'update']);
+            Route::delete('/{id}', [BookingController::class, 'delete']);
         });
 
         Route::group([

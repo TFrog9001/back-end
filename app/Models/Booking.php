@@ -14,8 +14,11 @@ class Booking extends Model
         'user_id',
         'start_time',
         'end_time',
+        'booking_date',
         'price',
+        'field_price',
         'status',
+        'deposit',
     ];
 
     /**

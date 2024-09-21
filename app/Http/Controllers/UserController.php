@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use League\Flysystem\UrlGeneration\PublicUrlGenerator;
 
 class UserController extends Controller
 {
@@ -26,7 +27,7 @@ class UserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role_id' => 3, // Đặt mặc định là User
+            'role_id' => 3,
         ]);
 
         return response()->json([
@@ -37,6 +38,22 @@ class UserController extends Controller
     public function index()
     {
         $users = User::all();
+
+        return response()->json([
+            'users' => $users,
+        ]);
+    }
+
+    public function show($id){
+        $users = User::findOrFail($id);
+
+        return response()->json([
+            'users' => $users,
+        ]);
+    }
+
+    public function getCustomers() {
+        $users = User::where('role_id', '=', '3')->get();
 
         return response()->json([
             'users' => $users,
