@@ -21,6 +21,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\FieldController;
 use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\SupplyController;
+use App\Http\Controllers\PaymentController;
 
 Route::post('/auth/register', [UserController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -44,6 +45,10 @@ Route::group([
             Route::get('google/callback', [AuthController::class, 'handleGoogleCallback']);
         }
     );
+
+    // Zalopay
+    Route::post('/zalopay', [PaymentController::class, 'createZaloPayOrder']);
+    Route::post('/zalopay/callback', [PaymentController::class, 'zalopayCallback']);
 
     Route::group([
         // 'middleware' => ['check.admin', 'check.staff'],
