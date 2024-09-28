@@ -9,8 +9,8 @@ use App\Http\Controllers\BookingController;
 class PaymentController extends Controller
 {
     function createZaloPayOrder(Request $request)
-    {   
-        Log::info('thong tin vao' . $request);
+    {
+        // Log::info('thong tin vao' . $request);
         $config = [
             "app_id" => 2554,
             "key1" => "sdngKKJmqEMzvh5QQcdD2A9XBSKUNaYn",
@@ -36,12 +36,12 @@ class PaymentController extends Controller
             end_time: $request->end_time
         );
 
-        $deposit = $fieldPrice * (40/100);
+        $deposit = $fieldPrice * (40 / 100);
 
         $amount = 0;
         $title = "";
-        
-        if($request->payment_method == "partial"){
+
+        if ($request->payment_method == "partial") {
             $amount = $deposit;
             $title = "cọc tiền đặt sân";
         } else {
@@ -59,8 +59,11 @@ class PaymentController extends Controller
                 'user_id' => $request->user_id,
                 'user_name' => $request->user_name,
                 'user_phone' => $request->user_phone,
+                'payment_method' => $request->payment_method,
+                'payment_type' => 'zalopay',
+                'redirecturl' => "http://127.0.0.1:3002/booking"
             ];
-        Log::info('embed_data'. json_encode($embeddata));
+        Log::error('embed_data_create' . json_encode($embeddata));
         $items = '[]';
         $transID = rand(0, 1000000);
         $order = [
@@ -96,8 +99,8 @@ class PaymentController extends Controller
     }
 
     public function zalopayCallback()
-    {
-        Log::info('hello callback');
+    {   
+        Log::info("Hello callback");
         $result = [];
 
         try {
@@ -105,21 +108,17 @@ class PaymentController extends Controller
             $postdata = file_get_contents('php://input');
             $postdatajson = json_decode($postdata, true);
             $mac = hash_hmac("sha256", $postdatajson["data"], $key2);
-
             $requestmac = $postdatajson["mac"];
-            Log::info($postdatajson);
 
-            // kiểm tra callback hợp lệ (đến từ ZaloPay server)
             if (strcmp($mac, $requestmac) != 0) {
-                // callback không hợp lệ
                 $result["return_code"] = -1;
                 $result["return_message"] = "mac not equal";
+                Log::error("false");
             } else {
-                $datajson = json_decode($postdatajson["data"], true);
+                $datajson = json_decode($postdatajson['data'], true);
                 $embedData = json_decode($datajson['embed_data'], true);
 
                 $request = new Request($embedData);
-                Log::notice("Booking creeate");
                 $bookingController = new BookingController();
                 $bookingController->store($request);
 
@@ -127,11 +126,11 @@ class PaymentController extends Controller
                 $result["return_message"] = "success";
             }
         } catch (\Exception $e) {
-            $result["return_code"] = 0; 
+            Log::info('return'. $e);
+            $result["return_code"] = 0;
             $result["return_message"] = $e->getMessage();
         }
 
-        // thông báo kết quả cho ZaloPay server
         return json_encode($result);
     }
 }

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\FieldPrice;
+use App\Models\User;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -90,25 +92,50 @@ class BookingController extends Controller
      * Hàm tạo booking.
      */
     public function store(Request $request)
-    {   
-        Log::info('booking '. $request);
+    {      
+        Log::info($request); 
         try {
+            // Validate các dữ liệu đầu vào
             $request->validate([
                 'field_id' => 'required|exists:fields,id',
-                'user_id' => 'required|exists:users,id',
                 'booking_date' => 'required|date',
                 'start_time' => 'required|date_format:H:i',
                 'end_time' => 'required|date_format:H:i|after:start_time',
+                'user_name' => 'required_if:user_id,null',
+                'user_phone' => 'required_if:user_id,null',
             ]);
+            // Nếu user_id rỗng, tạo user mới
+            if (empty($request->user_id)) {
+                $user = User::create([
+                    'name' => $request->user_name,
+                    'phone' => $request->user_phone,
+                    'role_id' => 3,
+                    // Các trường khác nếu cần, như email, password tạm thời,...
+                ]);
+                $request->merge(['user_id' => $user->id]); // Cập nhật user_id vào request
+            }
 
+            // Kiểm tra khung giờ có khả dụng không
             if (!$this->isTimeSlotAvailable($request->field_id, $request->booking_date, $request->start_time, $request->end_time)) {
                 return response()->json([
                     'message' => 'Khung giờ này đã được đặt. Vui lòng chọn khung giờ khác.',
                 ], 422);
             }
 
+            // Tính tổng giá tiền cho việc đặt sân
             $totalPrice = $this->calculateFieldPrice($request->field_id, $request->start_time, $request->end_time);
 
+
+            if($request->payment_method == "full"){
+                $status = "Đã thanh toán";
+            } else if($request->payment_method == "partial") {
+                $status = "Đã cọc";
+                $deposit = $totalPrice *0.4;
+            }
+            else if($request->payment_method == "none") {
+                $status = "Đã đặt";
+            }
+            // Tạo mới booking
             $booking = Booking::create([
                 'field_id' => $request->field_id,
                 'user_id' => $request->user_id,
@@ -116,11 +143,11 @@ class BookingController extends Controller
                 'start_time' => $request->start_time,
                 'end_time' => $request->end_time,
                 'field_price' => $totalPrice,
-                'deposit' => $request->deposit ?? 0,
-                'status' => 'Đã đặt',
+                'deposit' => $deposit ?? 0,
+                'status' => $status,
             ]);
-
             return response()->json($booking, 201);
+
         } catch (ValidationException $e) {
             return response()->json([
                 'errors' => $e->errors(),
@@ -133,6 +160,7 @@ class BookingController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * Hiển thị thông tin một booking cụ thể.
