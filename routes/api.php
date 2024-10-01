@@ -93,6 +93,7 @@ Route::group([
             'prefix' => 'bookings',
         ], function () {
             Route::get('', [BookingController::class, 'index']);
+            Route::get('/{id}', [BookingController::class, 'show']);
             Route::post('', [BookingController::class, 'store']);
             Route::post('/{id}', [BookingController::class, 'update']);
             Route::delete('/{id}', [BookingController::class, 'delete']);

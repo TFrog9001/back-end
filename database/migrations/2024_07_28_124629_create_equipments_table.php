@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('equipments', function (Blueprint $table) {
             $table->id();
+            $table->string('serial_number', 50);
             $table->string('name');
             $table->timestamps();
         });

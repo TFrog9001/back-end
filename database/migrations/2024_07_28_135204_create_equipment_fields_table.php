@@ -13,10 +13,15 @@ return new class extends Migration
     {
         Schema::create('equipment_fields', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('equipment_id')->constrained('equipment')->onDelete('cascade');
-            $table->foreignId('field_id')->constrained('fields')->onDelete('cascade');
-            $table->timestamp('allocated_at')->useCurrent();
-            $table->timestamps();
+            $table->unsignedBigInteger('equipment_id');
+            $table->unsignedBigInteger('field_id');
+            $table->timestamp('allocated_at')->default(DB::raw('CURRENT_TIMESTAMP'));
+            $table->timestamps(); 
+
+            // Foreign keys
+            $table->foreign('equipment_id')->references('id')->on('equipments')->onDelete('cascade');
+            $table->foreign('field_id')->references('id')->on('fields')->onDelete('cascade');
+        
         });
     }
 

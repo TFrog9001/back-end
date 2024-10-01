@@ -24,6 +24,21 @@ class BookingController extends Controller
         return response()->json($bookings);
     }
 
+
+    /**
+     * Hiển thị thông tin một booking cụ thể.
+     */
+    public function show($id)
+    {
+        $booking = Booking::with(['field', 'user'])->find($id);
+
+        if (!$booking) {
+            return response()->json(['message' => 'Booking not found'], 404);
+        }
+
+        return response()->json($booking);
+    }
+
     /**
      * Tạo một booking mới.
      */
@@ -92,8 +107,7 @@ class BookingController extends Controller
      * Hàm tạo booking.
      */
     public function store(Request $request)
-    {      
-        Log::info($request); 
+    {
         try {
             // Validate các dữ liệu đầu vào
             $request->validate([
@@ -126,13 +140,12 @@ class BookingController extends Controller
             $totalPrice = $this->calculateFieldPrice($request->field_id, $request->start_time, $request->end_time);
 
 
-            if($request->payment_method == "full"){
+            if ($request->payment_method == "full") {
                 $status = "Đã thanh toán";
-            } else if($request->payment_method == "partial") {
+            } else if ($request->payment_method == "partial") {
                 $status = "Đã cọc";
-                $deposit = $totalPrice *0.4;
-            }
-            else if($request->payment_method == "none") {
+                $deposit = $totalPrice * 0.4;
+            } else if ($request->payment_method == "none") {
                 $status = "Đã đặt";
             }
             // Tạo mới booking
@@ -159,21 +172,6 @@ class BookingController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
-    }
-
-
-    /**
-     * Hiển thị thông tin một booking cụ thể.
-     */
-    public function show($id)
-    {
-        $booking = Booking::with(['field', 'user'])->find($id);
-
-        if (!$booking) {
-            return response()->json(['message' => 'Booking not found'], 404);
-        }
-
-        return response()->json($booking);
     }
 
     /**
