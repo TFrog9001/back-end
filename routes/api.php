@@ -141,7 +141,6 @@ Route::middleware('auth:api')->group(function () {
 });
 
 Route::middleware('auth:api')->group(function () {
-    Route::post('/bookings/{booking}/conversations', [BookingConversationController::class, 'store']);
-    Route::post('/bookings/{booking}/conversations/{conversation}/messages', [BookingConversationController::class, 'storeMessage']);
-    Route::get('/bookings/{booking}/conversations/{conversation}/messages', [BookingConversationController::class, 'getMessages']);
+    Route::get('/bookings/{bookingId}/messages', [BookingConversationController::class, 'getMessages']);
+    Route::post('/bookings/{bookingId}/messages', [BookingConversationController::class, 'sendMessage']);
 });

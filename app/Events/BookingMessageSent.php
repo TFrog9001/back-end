@@ -23,7 +23,8 @@ class BookingMessageSent implements ShouldBroadcast
 
     public function broadcastOn()
     {
-        return new Channel('booking-conversation.' . $this->message->conversation_id);
+        // return new Channel('booking-conversation.' . $this->message->conversation_id);
+        return new PrivateChannel('booking.' . $this->bookingId);
     }
 
     public function broadcastAs()

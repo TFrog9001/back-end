@@ -9,15 +9,10 @@ class BookingMessage extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['conversation_id', 'sender_id', 'message'];
+    protected $fillable = ['booking_id', 'user_id', 'message'];
 
-    public function conversation()
+    public function user()
     {
-        return $this->belongsTo(BookingConversation::class, 'conversation_id');
-    }
-
-    public function sender()
-    {
-        return $this->belongsTo(User::class, 'sender_id');
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 }

@@ -12,13 +12,13 @@ return new class extends Migration {
     {
         Schema::create('booking_messages', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('conversation_id');
-            $table->unsignedBigInteger('sender_id');
+            $table->unsignedBigInteger('booking_id');
+            $table->unsignedBigInteger('user_id');
             $table->text('message');
             $table->timestamps();
 
             // Khai báo khoá ngoại:
-            $table->foreign('conversation_id')->references('id')->on('booking_conversations')->onDelete('cascade');
+            $table->foreign('booking_id')->references('id')->on('bookings')->onDelete('cascade');
             $table->foreign('sender_id')->references('id')->on('users')->onDelete('cascade');
         });
 

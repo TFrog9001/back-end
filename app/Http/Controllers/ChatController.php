@@ -2,33 +2,36 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\MessageSent;
+use App\Models\BookingMessage;
 use Illuminate\Http\Request;
+use App\Events\MessageSent;
+use Illuminate\Support\Facades\Auth;
 
 class ChatController extends Controller
 {
-    public function send(Request $request)
+    // Lấy danh sách tin nhắn theo booking ID
+    public function getMessages($bookingId)
+    {
+        $messages = BookingMessage::where('booking_id', $bookingId)->with('user')->get();
+        return response()->json($messages);
+    }
+
+    // Gửi tin nhắn
+    public function sendMessage(Request $request, $bookingId)
     {
         $request->validate([
             'message' => 'required|string',
-            'booking_id' => 'required|integer',
         ]);
 
-        $message = $request->message;
-        $bookingId = $request->booking_id;
+        $message = BookingMessage::create([
+            'message' => $request->message,
+            'user_id' => Auth::id(),
+            'booking_id' => $bookingId,
+        ]);
 
-        broadcast(new MessageSent($message, $bookingId))->toOthers();
+        // Phát sự kiện qua WebSocket
+        broadcast(new MessageSent($message->load('user')))->toOthers();
 
-        return response()->json(['status' => 'Message Sent!']);
-    }
-
-    public function sendMessage(Request $request)
-    {
-        $user = auth()->user();
-        $message = $request->input('message');
-
-        broadcast(new MessageSent($message, $user))->toOthers();
-
-        return response()->json(['status' => 'Message Sent!']);
+        return response()->json(['message' => 'Message sent successfully!', 'data' => $message]);
     }
 }
