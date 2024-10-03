@@ -22,6 +22,9 @@ use App\Http\Controllers\FieldController;
 use App\Http\Controllers\EquipmentController;
 use App\Http\Controllers\SupplyController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\BookingConversationController;
+use App\Http\Controllers\GeneralConversationController;
 
 Route::post('/auth/register', [UserController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -30,9 +33,11 @@ Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 
 
 Route::group([
-    // 'middleware' => ['api','auth:api'],
+    // 'middleware' => ['api','auth:api'], 
 ], function () {
 
+    Route::post('/send-message', [ChatController::class, 'sendMessage']);
+    Route::post('/chat/send', [ChatController::class, 'send']);
     Route::group(
         [
             'prefix' => 'auth',
@@ -126,4 +131,17 @@ Route::group([
             // Route::resource('/roles', [RoleController::class]);
         });
     });
+});
+
+
+Route::middleware('auth:api')->group(function () {
+    Route::post('/general-conversations', [GeneralConversationController::class, 'store']);
+    Route::post('/general-conversations/{conversation}/messages', [GeneralConversationController::class, 'storeMessage']);
+    Route::get('/general-conversations/{conversation}/messages', [GeneralConversationController::class, 'getMessages']);
+});
+
+Route::middleware('auth:api')->group(function () {
+    Route::post('/bookings/{booking}/conversations', [BookingConversationController::class, 'store']);
+    Route::post('/bookings/{booking}/conversations/{conversation}/messages', [BookingConversationController::class, 'storeMessage']);
+    Route::get('/bookings/{booking}/conversations/{conversation}/messages', [BookingConversationController::class, 'getMessages']);
 });

@@ -30,7 +30,7 @@ class SupplyController extends Controller
                 'quantity' => 'required|integer|min:0',
                 'unit' => 'required|string',
                 'price' => 'required|numeric|min:0',
-                // 'state' => 'required|string|in:available,out_of_stock',
+                'state' => 'required|string|in:available,out_of_stock',
             ]);
 
             $supply = Supply::create($validatedData);

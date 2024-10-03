@@ -9,6 +9,7 @@ return [
      */
     'dashboard' => [
         'port' => env('LARAVEL_WEBSOCKETS_PORT', 6001),
+        'host' => env('LARAVEL_WEBSOCKETS_HOST'),
     ],
 
     /*
@@ -21,29 +22,32 @@ return [
      * Optionally you can disable client events so clients cannot send
      * messages to each other via the webSockets.
      */
+    'apps' => [
+        [
+            'port' => env('LARAVEL_WEBSOCKETS_PORT', 6001),
+            'host' => env('LARAVEL_WEBSOCKETS_HOST'),
+            'id' => env('PUSHER_APP_ID'),
+            'name' => env('APP_NAME'),
+            'key' => env('PUSHER_APP_KEY'),
+            'secret' => env('PUSHER_APP_SECRET'),
+            'path' => env('PUSHER_APP_PATH', ''),
+            'capacity' => null,
+            'enable_client_messages' => false,
+            'enable_statistics' => true,
+            'encrypt' => false,
+        ],
+    ],
+
     // 'apps' => [
     //     [
     //         'id' => env('PUSHER_APP_ID'),
     //         'name' => env('APP_NAME'),
     //         'key' => env('PUSHER_APP_KEY'),
     //         'secret' => env('PUSHER_APP_SECRET'),
-    //         'path' => env('PUSHER_APP_PATH', ''),
-    //         'capacity' => null,
-    //         'enable_client_messages' => true,
+    //         'enable_client_messages' => false,
     //         'enable_statistics' => true,
     //     ],
     // ],
-
-    'apps' => [
-        [
-            'id' => env('PUSHER_APP_ID'),
-            'name' => env('APP_NAME'),
-            'key' => env('PUSHER_APP_KEY'),
-            'secret' => env('PUSHER_APP_SECRET'),
-            'enable_client_messages' => false,
-            'enable_statistics' => true,
-        ],
-    ],
 
     /*
      * This class is responsible for finding the apps. The default provider
@@ -59,7 +63,6 @@ return [
      * Leave this empty if you want to accept requests from all hosts.
      */
     'allowed_origins' => [
-        //
     ],
 
     /*

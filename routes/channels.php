@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Broadcast;
-
+use App\Models\Booking;
 /*
 |--------------------------------------------------------------------------
 | Broadcast Channels
@@ -16,3 +16,14 @@ use Illuminate\Support\Facades\Broadcast;
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
+Broadcast::channel('booking.{bookingId}', function ($user, $bookingId) {
+    $booking = Booking::find($bookingId);
+    if (!$booking) {
+        Log::error('Booking not found for ID: ' . $bookingId);
+        return false;
+    }
+    
+    return (int) $user->id === (int) $booking->user_id || $user->isEmployee();
+});
+
+

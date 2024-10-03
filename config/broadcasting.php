@@ -30,22 +30,22 @@ return [
 
     'connections' => [
 
-        'pusher' => [
-            'driver' => 'pusher',
-            'key' => env('PUSHER_APP_KEY'),
-            'secret' => env('PUSHER_APP_SECRET'),
-            'app_id' => env('PUSHER_APP_ID'),
-            'options' => [
-                'host' => env('PUSHER_HOST') ?: 'api-'.env('PUSHER_APP_CLUSTER', 'mt1').'.pusher.com',
-                'port' => env('PUSHER_PORT', 443),
-                'scheme' => env('PUSHER_SCHEME', 'https'),
-                'encrypted' => true,
-                'useTLS' => env('PUSHER_SCHEME', 'https') === 'https',
-            ],
-            'client_options' => [
-                // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
-            ],
-        ],
+        // 'pusher' => [
+        //     'driver' => 'pusher',
+        //     'key' => env('PUSHER_APP_KEY'),
+        //     'secret' => env('PUSHER_APP_SECRET'),
+        //     'app_id' => env('PUSHER_APP_ID'),
+        //     'options' => [
+        //         'host' => env('PUSHER_HOST') ?: 'api-'.env('PUSHER_APP_CLUSTER', 'mt1').'.pusher.com',
+        //         'port' => env('PUSHER_PORT', 443),
+        //         'scheme' => env('PUSHER_SCHEME', 'https'),
+        //         'encrypted' => true,
+        //         'useTLS' => env('PUSHER_SCHEME', 'https') === 'https',
+        //     ],
+        //     'client_options' => [
+        //         // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
+        //     ],
+        // ],
 
         // 'pusher' => [
         //     'driver' => 'pusher',
@@ -53,14 +53,32 @@ return [
         //     'secret' => env('PUSHER_APP_SECRET'),
         //     'app_id' => env('PUSHER_APP_ID'),
         //     'options' => [
-        //         'cluster' => env('PUSHER_APP_CLUSTER'),
-        //         'encrypted' => true,
-        //         'host' => '127.0.0.1',
-        //         'port' => 6001,
+        //         'host' => env('LARAVEL_WEBSOCKETS_HOST'),
+        //         'port' => env('LARAVEL_WEBSOCKETS_PORT'),
+        //         'cluster' => env('LARAVEL_WEBSOCKETS_CLUSTER'),
+        //         'useTLS' => false,
         //         'scheme' => 'http',
-        //         'useTLS' => true
+        //         'encrypted' => true,
+        //         'curl_opention' => [
+        //             CURLOPT_SSL_VERIFYHOST => 0,
+        //             CURLOPT_SSL_VERIFYPEER => 0,
+        //         ],
         //     ],
         // ],
+        'pusher' => [
+            'driver' => 'pusher',
+            'key' => env('PUSHER_APP_KEY'),
+            'secret' => env('PUSHER_APP_SECRET'),
+            'app_id' => env('PUSHER_APP_ID'),
+            'options' => [
+                'host' => env('LARAVEL_WEBSOCKETS_HOST'), // Đảm bảo đây là '127.0.0.1'
+                'port' => env('LARAVEL_WEBSOCKETS_PORT'), // Đảm bảo đây là 6001
+                'cluster' => env('LARAVEL_WEBSOCKETS_CLUSTER'),
+                'useTLS' => false,
+                'scheme' => 'http',
+                'encrypted' => false, // Đảm bảo encrypted là false khi sử dụng http
+            ],
+        ],
 
         'ably' => [
             'driver' => 'ably',

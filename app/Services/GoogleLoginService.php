@@ -38,7 +38,7 @@ class GoogleLoginService
                     'email' => $googleUser->email,
                     'google_id' => $googleUser->id,
                     'avatar' => $googleUser->avatar,
-                    'role_id' => '2', // user role id
+                    'role_id' => '3', // user role id
                     'password' => bcrypt(Str::random(16)), // Tạo mật khẩu ngẫu nhiên cho người dùng mới
                 ]);
             }
