@@ -19,7 +19,7 @@ return new class extends Migration
             $table->time('start_time');
             $table->time('end_time');
             $table->decimal('field_price', 8, 2);
-            $table->enum('status', ['Đã đặt', 'Đã thanh toán', 'Hủy'])->default('Đã đặt');
+            $table->enum('status', ['Đã đặt', 'Đã cọc', 'Đã thanh toán', 'Hủy'])->default('Đã đặt');
             $table->string('pament_type')->default('direct');
             $table->decimal('deposit', 8, 2);
             $table->timestamps();

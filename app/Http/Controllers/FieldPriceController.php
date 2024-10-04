@@ -6,7 +6,7 @@ use App\Models\FieldPrice;
 use Illuminate\Http\Request;
 use App\Models\Field;
 use Illuminate\Validation\ValidationException;
-
+use Illuminate\Support\Facades\DB;
 
 class FieldPriceController extends Controller
 {
@@ -15,21 +15,44 @@ class FieldPriceController extends Controller
      */
     public function store(Request $request)
     {
-        try {
-            $request->validate([
-                'field_id' => 'required|exists:fields,id',
-                'start_time' => 'required|date_format:H:i',
-                'end_time' => 'required|date_format:H:i|after:start_time',
-                // 'day_type' => 'required|in:Ngày thường,Cuối tuần,Ngày lễ',
-                'price' => 'required|numeric|min:0',
-            ]);
+        $validated = $request->validate([
+            'field_id' => 'required|exists:fields,id',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i|after:start_time',
+            'price' => 'required|numeric',
+        ]);
 
-            $price = FieldPrice::create($request->all());
-            $field = Field::with('prices')->findOrFail($request->field_id);
-            return response()->json($field, 201);
-        } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
+        $newStart = $validated['start_time'];
+        $newEnd = $validated['end_time'];
+        $fieldId = $validated['field_id'];
+
+        // Lấy các khung giờ hiện có của sân
+        $existingPrices = FieldPrice::where('field_id', $fieldId)
+            ->where(function ($query) use ($newStart, $newEnd) {
+                $query->whereBetween('start_time', [$newStart, $newEnd])
+                    ->orWhereBetween('end_time', [$newStart, $newEnd]);
+            })
+            ->get();
+
+        // Xử lý cập nhật các khung giờ
+        foreach ($existingPrices as $price) {
+            if ($price->start_time < $newStart && $price->end_time > $newStart) {
+                // Cập nhật khung giờ trước
+                $price->end_time = $newStart;
+                $price->save();
+            } elseif ($price->start_time < $newEnd && $price->end_time > $newEnd) {
+                // Cập nhật khung giờ sau
+                $price->start_time = $newEnd;
+                $price->save();
+            } elseif ($price->start_time >= $newStart && $price->end_time <= $newEnd) {
+                // Xóa khung giờ nằm hoàn toàn trong khung giờ mới
+                $price->delete();
+            }
         }
+
+        // Thêm giá mới
+        $fieldPrice = FieldPrice::create($validated);
+        return response()->json($fieldPrice, 201);
     }
 
     /**
@@ -37,22 +60,44 @@ class FieldPriceController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $price = FieldPrice::find($id);
-
-        if (!$price) {
-            return response()->json(['message' => 'Field Price not found'], 404);
-        }
-
-        $request->validate([
-            'field_id' => 'exists:fields,id',
-            'start_time' => 'date_format:H:i',
-            'end_time' => 'date_format:H:i|after:start_time',
-            // 'day_type' => 'in:Ngày thường,Cuối tuần,Ngày lễ',
-            'price' => 'numeric|min:0',
+        $validated = $request->validate([
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i|after:start_time',
+            'price' => 'required|numeric',
         ]);
 
-        $price->update($request->all());
-        return response()->json($price);
+        $fieldPrice = FieldPrice::findOrFail($id);
+        $newStart = $validated['start_time'];
+        $newEnd = $validated['end_time'];
+
+        // Lấy các khung giờ hiện có của sân, ngoại trừ khung giờ đang cập nhật
+        $existingPrices = FieldPrice::where('field_id', $fieldPrice->field_id)
+            ->where('id', '<>', $id)
+            ->where(function ($query) use ($newStart, $newEnd) {
+                $query->whereBetween('start_time', [$newStart, $newEnd])
+                    ->orWhereBetween('end_time', [$newStart, $newEnd]);
+            })
+            ->get();
+
+        // Xử lý cập nhật các khung giờ
+        foreach ($existingPrices as $price) {
+            if ($price->start_time < $newStart && $price->end_time > $newStart) {
+                // Cập nhật khung giờ trước
+                $price->end_time = $newStart;
+                $price->save();
+            } elseif ($price->start_time < $newEnd && $price->end_time > $newEnd) {
+                // Cập nhật khung giờ sau
+                $price->start_time = $newEnd;
+                $price->save();
+            } elseif ($price->start_time >= $newStart && $price->end_time <= $newEnd) {
+                // Xóa khung giờ nằm hoàn toàn trong khung giờ mới
+                $price->delete();
+            }
+        }
+
+        // Cập nhật khung giờ hiện tại
+        $fieldPrice->update($validated);
+        return response()->json($fieldPrice);
     }
 
     /**

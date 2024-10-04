@@ -157,6 +157,7 @@ class BookingController extends Controller
                 'end_time' => $request->end_time,
                 'field_price' => $totalPrice,
                 'deposit' => $deposit ?? 0,
+                'pament_type' => $request->payment_type || 'direct',
                 'status' => $status,
             ]);
             return response()->json($booking, 201);
