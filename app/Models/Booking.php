@@ -18,6 +18,7 @@ class Booking extends Model
         'price',
         'field_price',
         'status',
+        'payment_type',
         'deposit',
     ];
 

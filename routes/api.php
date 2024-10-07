@@ -30,10 +30,10 @@ Route::post('/auth/register', [UserController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 
-
+Route::post('/zalopay/callback', [PaymentController::class, 'zalopayCallback']);
 
 Route::group([
-    // 'middleware' => ['api','auth:api'], 
+    'middleware' => ['api','auth:api'], 
 ], function () {
 
     Route::post('/send-message', [ChatController::class, 'sendMessage']);
@@ -53,7 +53,7 @@ Route::group([
 
     // Zalopay
     Route::post('/zalopay', [PaymentController::class, 'createZaloPayOrder']);
-    Route::post('/zalopay/callback', [PaymentController::class, 'zalopayCallback']);
+    
 
     Route::group([
         // 'middleware' => ['check.admin', 'check.staff'],
