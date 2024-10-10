@@ -31,6 +31,8 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 
 Route::post('/zalopay/callback', [PaymentController::class, 'zalopayCallback']);
+Route::get('/auth/google', [AuthController::class, 'redirectToGoogle']);
+Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 
 Route::group([
     'middleware' => ['api','auth:api'], 
@@ -46,8 +48,7 @@ Route::group([
             Route::post('/logout', [AuthController::class, 'logout']);
             Route::get('/me', [AuthController::class, 'me']);
             Route::post('/check/time', [AuthController::class, 'checkRefreshTokenExpiration']);
-            Route::get('google', [AuthController::class, 'redirectToGoogle']);
-            Route::get('google/callback', [AuthController::class, 'handleGoogleCallback']);
+            
         }
     );
 

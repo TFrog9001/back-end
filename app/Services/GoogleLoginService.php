@@ -38,7 +38,7 @@ class GoogleLoginService
                     'email' => $googleUser->email,
                     'google_id' => $googleUser->id,
                     'avatar' => $googleUser->avatar,
-                    'role_id' => '3', // user role id
+                    'role_id' => '3',
                     'password' => bcrypt(Str::random(16)), // Tạo mật khẩu ngẫu nhiên cho người dùng mới
                 ]);
             }
@@ -46,18 +46,22 @@ class GoogleLoginService
             // Đăng nhập người dùng và tạo token
             $token = auth()->login($user);
             $refreshToken = $this->createRefreshToken($user);
-
-            return $this->respondWithToken($token, $refreshToken, $user->id);
-            // echo "<script>
-            //         window.opener.postMessage({
-            //             access_token: '$token',
-            //             refresh_token: '$refreshToken',
-            //             user_id: '$user->id'
-            //         }, 'http://localhost:3001');
-            //         window.close();
-            //         </script>";
+            return "<script>
+            window.opener.postMessage({
+                token: '$token',
+                refreshToken: '$refreshToken',
+                user: " . json_encode($user) . "
+            }, 'http://127.0.0.1:3001');
+            window.close();
+        </script>";
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to authenticate with Google', 'message' => $e->getMessage()], 500);
+            // return response()->json(['error' => 'Failed to authenticate with Google', 'message' => $e->getMessage()], 500);
+            return "<script>
+            window.opener.postMessage({
+                error: 'Đăng nhập bằng Google thất bại'
+            }, 'http://127.0.0.1:3001');
+            window.close();
+        </script>";
         }
     }
 
