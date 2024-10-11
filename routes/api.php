@@ -35,7 +35,7 @@ Route::get('/auth/google', [AuthController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 
 Route::group([
-    'middleware' => ['api','auth:api'], 
+    // 'middleware' => ['api','auth:api'], 
 ], function () {
 
     Route::post('/send-message', [ChatController::class, 'sendMessage']);
@@ -132,8 +132,13 @@ Route::group([
             // Route::resource('/roles', [RoleController::class]);
         });
     });
-});
 
+    Route::group([
+
+    ], function(){
+        Route::get('/user-booking/{id}',[BookingController::class, 'getUserBooking']);
+    });
+});
 
 Route::middleware('auth:api')->group(function () {
     Route::post('/general-conversations', [GeneralConversationController::class, 'store']);

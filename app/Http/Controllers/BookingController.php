@@ -20,7 +20,7 @@ class BookingController extends Controller
      */
     public function index(Request $request)
     {
-        $bookings = Booking::with(['field', 'user'])->where('booking_date', $request->booking_date)->get();
+        $bookings = Booking::with(['field', 'user'])->where('booking_date', $request->booking_date)->where('status','!=', 'Hủy')->get();
         return response()->json($bookings);
     }
 
@@ -39,6 +39,25 @@ class BookingController extends Controller
         return response()->json($booking);
     }
 
+    public function getUserBooking($id)
+    {
+        // Tìm tất cả các booking có user_id = $id
+        $bookings = Booking::with(['field', 'user'])
+            ->where('user_id', $id)
+            ->orderBy('booking_date', 'asc')
+            ->get();
+
+
+        // Kiểm tra nếu không có booking nào
+        if ($bookings->isEmpty()) {
+            return response()->json(['message' => 'No bookings found for this user'], 404);
+        }
+
+        // Trả về danh sách các booking của user
+        return response()->json($bookings);
+    }
+
+
     /**
      * Tạo một booking mới.
      */
@@ -46,6 +65,7 @@ class BookingController extends Controller
     {
         return !Booking::where('field_id', $field_id)
             ->where('booking_date', $booking_date)
+            ->where('status', '!=', 'Hủy')
             ->where(function ($query) use ($start_time, $end_time) {
                 $query->where(function ($q) use ($start_time) {
                     $q->where('start_time', '<=', $start_time)
