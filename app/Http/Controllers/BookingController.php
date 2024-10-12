@@ -24,6 +24,12 @@ class BookingController extends Controller
         return response()->json($bookings);
     }
 
+    public function getFailBooking(Request $request)
+    {
+        $bookings = Booking::with(['field', 'user'])->where('booking_date', $request->booking_date)->where('status','=', 'Hủy')->get();
+        return response()->json($bookings);
+    }
+
 
     /**
      * Hiển thị thông tin một booking cụ thể.
@@ -44,7 +50,7 @@ class BookingController extends Controller
         // Tìm tất cả các booking có user_id = $id
         $bookings = Booking::with(['field', 'user'])
             ->where('user_id', $id)
-            ->orderBy('booking_date', 'asc')
+            ->orderBy('booking_date', 'desc')
             ->get();
 
 

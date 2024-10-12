@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('supplies', function (Blueprint $table) {
             $table->id();
+            $table->string('serial_number', 50)->unique();
             $table->string('name');
             $table->integer('quantity')->default(0);
-            $table->string('unit');
-            $table->decimal('price', 10, 2); // Giá bán
-            $table->string('state')->default('available'); // Trạng thái: có thể là available, out_of_stock
+            $table->decimal('price', 10, 2);
+            $table->string('state')->default('Còn hàng'); // Trạng thái: có thể là available, out_of_stock
             $table->timestamps();
         });
     }

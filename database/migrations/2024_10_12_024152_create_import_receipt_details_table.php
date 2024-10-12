@@ -11,12 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('equipments', function (Blueprint $table) {
+        Schema::create('import_receipt_details', function (Blueprint $table) {
             $table->id();
-            $table->string('serial_number', 50)->unique();
-            $table->string('name');
+            $table->unsignedBigInteger('receipt_id');
+            $table->enum('item_type', ['equipment', 'supply']);
+            $table->unsignedBigInteger('item_id');
             $table->integer('quantity')->default(1);
+            $table->decimal('price', 15, 2);
             $table->timestamps();
+
+            $table->foreign('receipt_id')->references('id')->on('import_receipts')->onDelete('cascade');
         });
     }
 
@@ -25,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('equipments');
+        Schema::dropIfExists('import_receipt_details');
     }
 };

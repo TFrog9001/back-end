@@ -16,7 +16,7 @@ class EquipmentController extends Controller
      */
     public function index()
     {
-        $equipment = Equipment::with('fields')->get();
+        $equipment = Equipment::all();
         return response()->json($equipment);
     }
 
@@ -28,7 +28,7 @@ class EquipmentController extends Controller
         try {
             $validatedData = $request->validate([
                 'name' => 'required|string|max:255',
-                'state' => 'required|string|in:available,in_use,damaged', // Trạng thái: có thể sử dụng, đang sử dụng, hư hỏng
+                
             ]);
 
             $equipment = Equipment::create($validatedData);

@@ -24,8 +24,6 @@ return new class extends Migration
             $table->enum('vip', ['0', '1'])->default('0');
             $table->rememberToken();
             $table->timestamps();
-
-            $table->foreign('role_id')->references('id')->on('roles')->onDelete('set null');
         });
     }
 

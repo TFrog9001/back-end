@@ -10,17 +10,15 @@ class Equipment extends Model
     use HasFactory;
 
     protected $fillable = [
+        'serial_number',
         'name',
-        'state',
     ];
 
     /**
      * Thiết bị được cấp cho các sân
      */
-    public function fields()
+    public function allocations()
     {
-        return $this->belongsToMany(Field::class, 'equipment_field')
-                    ->withPivot('allocated_at')
-                    ->withTimestamps();
+        return $this->hasMany(EquipmentAllocation::class);
     }
 }

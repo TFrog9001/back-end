@@ -16,8 +16,7 @@ return new class extends Migration
             $table->bigInteger('field_id')->unsigned();
             $table->time('start_time');
             $table->time('end_time');
-            $table->enum('day_type', ['Ngày thường', 'Cuối tuần', 'Ngày lễ']);
-            $table->decimal('price', 8, 2);
+            $table->decimal('price', 15, 2);
             $table->timestamps();
 
             $table->foreign('field_id')->references('id')->on('fields')->onDelete('cascade');

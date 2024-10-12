@@ -28,9 +28,8 @@ class SupplyController extends Controller
             $validatedData = $request->validate([
                 'name' => 'required|string|max:255',
                 'quantity' => 'required|integer|min:0',
-                'unit' => 'required|string',
                 'price' => 'required|numeric|min:0',
-                'state' => 'required|string|in:available,out_of_stock',
+                'state' => 'sometimes|string|max:50',
             ]);
 
             $supply = Supply::create($validatedData);
@@ -67,11 +66,10 @@ class SupplyController extends Controller
             $supply = Supply::findOrFail($id);
 
             $validatedData = $request->validate([
-                'name' => 'string|max:255',
-                'quantity' => 'integer|min:0',
-                'unit' => 'string',
-                'price' => 'numeric|min:0',
-                'state' => 'string|in:available,out_of_stock',
+                'name' => 'sometimes|string|max:255',
+                'quantity' => 'sometimes|required|integer|min:0',
+                'price' => 'sometimes|required|numeric|min:0',
+                'state' => 'sometimes|string|max:50',
             ]);
 
             $supply->update($validatedData);

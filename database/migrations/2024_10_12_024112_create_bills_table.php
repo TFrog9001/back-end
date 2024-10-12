@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('equipments', function (Blueprint $table) {
+        Schema::create('bills', function (Blueprint $table) {
             $table->id();
-            $table->string('serial_number', 50)->unique();
-            $table->string('name');
-            $table->integer('quantity')->default(1);
+            $table->unsignedBigInteger('booking_id')->nullable();
+            $table->decimal('total_amount', 15, 2); 
             $table->timestamps();
+
+            $table->foreign('booking_id')->references('id')->on('bookings')->onDelete('cascade');
         });
     }
 
@@ -25,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('equipments');
+        Schema::dropIfExists('bills');
     }
 };

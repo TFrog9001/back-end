@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\FieldPriceController;
+use App\Http\Controllers\ImportReceiptController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -99,6 +100,7 @@ Route::group([
             'prefix' => 'bookings',
         ], function () {
             Route::get('', [BookingController::class, 'index']);
+            Route::get('/fail', [BookingController::class, 'getFailBooking']);
             Route::get('/{id}', [BookingController::class, 'show']);
             Route::post('', [BookingController::class, 'store']);
             Route::post('/{id}', [BookingController::class, 'update']);
@@ -127,6 +129,14 @@ Route::group([
 
 
         Route::group([
+            'prefix' => 'import-receipts',
+        ], function() {
+            Route::get('', [ImportReceiptController::class,'index']);
+            Route::get('{id}', [ImportReceiptController::class,'show']);
+            Route::delete('/{id}', [ImportReceiptController::class,'delete']);
+        });
+
+        Route::group([
             'middleware' => 'check.admin',
         ], function () {
             // Route::resource('/roles', [RoleController::class]);
@@ -140,11 +150,6 @@ Route::group([
     });
 });
 
-Route::middleware('auth:api')->group(function () {
-    Route::post('/general-conversations', [GeneralConversationController::class, 'store']);
-    Route::post('/general-conversations/{conversation}/messages', [GeneralConversationController::class, 'storeMessage']);
-    Route::get('/general-conversations/{conversation}/messages', [GeneralConversationController::class, 'getMessages']);
-});
 
 Route::middleware('auth:api')->group(function () {
     Route::get('/bookings/{bookingId}/messages', [BookingConversationController::class, 'getMessages']);

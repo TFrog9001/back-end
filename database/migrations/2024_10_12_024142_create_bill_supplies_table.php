@@ -11,12 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('equipments', function (Blueprint $table) {
+        Schema::create('bill_supplies', function (Blueprint $table) {
             $table->id();
-            $table->string('serial_number', 50)->unique();
-            $table->string('name');
+            $table->unsignedBigInteger('bill_id');
+            $table->unsignedBigInteger('supply_id');
             $table->integer('quantity')->default(1);
+            $table->decimal('price', 12, 2);
             $table->timestamps();
+
+            $table->foreign('bill_id')->references('id')->on('bills')->onDelete('cascade');
+            $table->foreign('supply_id')->references('id')->on('supplies')->onDelete('cascade');
         });
     }
 
@@ -25,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('equipments');
+        Schema::dropIfExists('bill_supplies');
     }
 };
