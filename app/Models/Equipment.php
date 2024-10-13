@@ -9,9 +9,11 @@ class Equipment extends Model
 {
     use HasFactory;
 
+    protected $table = 'equipments';
     protected $fillable = [
         'serial_number',
         'name',
+        'quantity',
     ];
 
     /**

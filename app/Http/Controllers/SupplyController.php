@@ -47,10 +47,10 @@ class SupplyController extends Controller
     /**
      * Hiển thị thông tin một hàng tiêu dùng cụ thể.
      */
-    public function show($id)
+    public function show($serial_number)
     {
         try {
-            $supply = Supply::findOrFail($id);
+            $supply = Supply::where('serial_number',$serial_number)->get();
             return response()->json($supply);
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Supply not found'], 404);

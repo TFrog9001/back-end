@@ -46,10 +46,10 @@ class EquipmentController extends Controller
     /**
      * Hiển thị thông tin một thiết bị cụ thể.
      */
-    public function show($id)
+    public function show($serial_number)
     {
         try {
-            $equipment = Equipment::with('fields')->findOrFail($id);
+            $equipment = Equipment::where('serial_number',$serial_number)->get();
             return response()->json($equipment);
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Equipment not found'], 404);

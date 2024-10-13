@@ -9,7 +9,9 @@ class Supply extends Model
 {
     use HasFactory;
 
+    protected $table = 'supplies';
     protected $fillable = [
+        'serial_number',
         'name',
         'quantity',
         'price',

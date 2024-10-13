@@ -111,6 +111,7 @@ Route::group([
             'prefix' => 'equipments',
         ], function () {
             Route::get('', [EquipmentController::class, 'index']);
+            Route::get('/{serial_number}', [EquipmentController::class, 'show']);
             Route::post('', [EquipmentController::class, 'store']);
             Route::post('/{id}', [EquipmentController::class, 'update']);
             Route::delete('/{id}', [EquipmentController::class, 'delete']);
@@ -122,6 +123,7 @@ Route::group([
             'prefix' => 'supplies',
         ], function () {
             Route::get('', [SupplyController::class, 'index']);
+            Route::get('/{serial_number}', [SupplyController::class, 'show']);
             Route::post('', [SupplyController::class, 'store']);
             Route::post('/{id}', [SupplyController::class, 'update']);
             Route::delete('/{id}', [SupplyController::class, 'delete']);
@@ -133,6 +135,8 @@ Route::group([
         ], function() {
             Route::get('', [ImportReceiptController::class,'index']);
             Route::get('{id}', [ImportReceiptController::class,'show']);
+            Route::post('', [ImportReceiptController::class,'store']);
+            Route::post('/{id}', [ImportReceiptController::class, 'update']);
             Route::delete('/{id}', [ImportReceiptController::class,'delete']);
         });
 
