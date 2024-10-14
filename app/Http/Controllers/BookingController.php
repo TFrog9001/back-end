@@ -20,13 +20,24 @@ class BookingController extends Controller
      */
     public function index(Request $request)
     {
-        $bookings = Booking::with(['field', 'user'])->where('booking_date', $request->booking_date)->where('status','!=', 'Hủy')->get();
+        $bookings = Booking::with(['field', 'user'])
+            ->when($request->booking_date, function ($query, $booking_date) {
+                return $query->where('booking_date', $booking_date);
+            })
+            ->when($request->status, function ($query, $status) {
+                if ($status === 'nofail') {
+                    return $query->where('status', '!=', 'Hủy');
+                }
+                return $query->where('status', $status);
+            })
+            ->get();
+
         return response()->json($bookings);
     }
 
     public function getFailBooking(Request $request)
     {
-        $bookings = Booking::with(['field', 'user'])->where('booking_date', $request->booking_date)->where('status','=', 'Hủy')->get();
+        $bookings = Booking::with(['field', 'user'])->where('booking_date', $request->booking_date)->where('status', '=', 'Hủy')->get();
         return response()->json($bookings);
     }
 
