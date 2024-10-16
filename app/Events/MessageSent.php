@@ -28,7 +28,7 @@ class MessageSent implements ShouldBroadcastNow
     }
 
     public function broadcastWith()
-    {
+    {   
         return [
             'message' => $this->message->message,
             'user_id' => $this->message->user_id,
@@ -36,7 +36,8 @@ class MessageSent implements ShouldBroadcastNow
             'user' => [
                 'id' => $this->message->user->id,
                 'name' => $this->message->user->name,
-            ]
+            ],
+            'create_at' => $this->message->created_at
         ];
     }
 }

@@ -37,4 +37,9 @@ class Booking extends Model
     {
         return $this->belongsTo(Field::class, 'field_id');
     }
+
+    public function bill()
+    {
+        return $this->belongsTo(Bill::class, 'id', 'booking_id');
+    }
 }

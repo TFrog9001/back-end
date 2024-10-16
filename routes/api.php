@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BillController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\FieldPriceController;
 use App\Http\Controllers\ImportReceiptController;
@@ -106,6 +107,15 @@ Route::group([
             Route::post('/{id}', [BookingController::class, 'update']);
             Route::delete('/{id}', [BookingController::class, 'delete']);
         });
+        Route::group([
+            'prefix' => 'bills',
+        ], function () {
+            // Route::get('/booking', [BillController::class, 'getBillByBookingId']);
+            Route::get('', [BillController::class, 'show']);
+            Route::post('addItems', [BillController::class, 'addItems']);
+            
+            Route::get('/details/{id}', [BillController::class, 'getBillSupplies']);
+        });
 
         Route::group([
             'prefix' => 'equipments',
@@ -127,6 +137,10 @@ Route::group([
             Route::post('', [SupplyController::class, 'store']);
             Route::post('/{id}', [SupplyController::class, 'update']);
             Route::delete('/{id}', [SupplyController::class, 'delete']);
+
+            //
+            
+
         });
 
 

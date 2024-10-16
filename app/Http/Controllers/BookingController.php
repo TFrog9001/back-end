@@ -5,11 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\FieldPrice;
 use App\Models\User;
+use App\Models\Bill;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
-
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Exception;
 
@@ -47,7 +48,7 @@ class BookingController extends Controller
      */
     public function show($id)
     {
-        $booking = Booking::with(['field', 'user'])->find($id);
+        $booking = Booking::with(['field', 'user', 'bill.supplies.supply'])->find($id);
 
         if (!$booking) {
             return response()->json(['message' => 'Booking not found'], 404);
@@ -145,6 +146,8 @@ class BookingController extends Controller
      */
     public function store(Request $request)
     {
+        Log::error('Hello');
+        DB::beginTransaction();
         try {
             // Validate các dữ liệu đầu vào
             $request->validate([
@@ -161,7 +164,6 @@ class BookingController extends Controller
                     'name' => $request->user_name,
                     'phone' => $request->user_phone,
                     'role_id' => 3,
-                    // Các trường khác nếu cần, như email, password tạm thời,...
                 ]);
                 $request->merge(['user_id' => $user->id]); // Cập nhật user_id vào request
             }
@@ -197,14 +199,29 @@ class BookingController extends Controller
                 'payment_type' => $request->payment_type ?? 'direct',
                 'status' => $status,
             ]);
+
+            $bill = Bill::firstOrCreate(
+                ['booking_id' => $booking->id],
+            );
+
+            Log::info('207'.$bill);
+            $bill->total_amount = $booking->field_price - $booking->deposit;
+            if ($booking->status === 'Đã thanh toán') {
+                $bill->total_amount = 0;
+            }
+
+            $bill->save();
+            DB::commit();
             return response()->json($booking, 201);
 
         } catch (ValidationException $e) {
+            DB::rollBack();
             return response()->json([
                 'errors' => $e->errors(),
                 'message' => 'Dữ liệu không hợp lệ, vui lòng kiểm tra lại thông tin đã nhập.',
             ], 422);
         } catch (Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'message' => 'Có lỗi xảy ra, vui lòng thử lại.',
                 'error' => $e->getMessage(),

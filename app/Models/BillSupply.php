@@ -25,6 +25,6 @@ class BillSupply extends Model
     // Quan hệ với Supply
     public function supply()
     {
-        return $this->belongsTo(Supply::class);
+        return $this->belongsTo(Supply::class, 'supply_id', 'id');
     }
 }
