@@ -34,7 +34,7 @@ class BillController extends Controller
         ]);
 
         try {
-            $billSupplies = []; // Mảng lưu các bill supplies được thêm vào
+            $billSupplies = [];
 
             DB::transaction(function () use ($request, &$billSupplies) {
                 $bill = Bill::findOrFail($request->input('bill_id'));
@@ -95,11 +95,93 @@ class BillController extends Controller
         }
     }
 
+    public function createBill($id)
+    {
+        try {
+            $bill = Bill::with('booking', 'supplies')->findOrFail($id);
+            return response()->json($bill, 201);
+
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Có lỗi xảy ra: ' . $e->getMessage()], 500);
+
+        }
+    }
+
+    public function paymentBill($id)
+    {
+        try {
+            $bill = Bill::findOrFail($id);
+            $bill->status = "Đã thanh toán";
+            $bill->save();
+            return response()->json($bill, 201);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Có lỗi xảy ra: ' . $e->getMessage()], 500);
+
+        }
+    }
+
     ///
 
-    public  function getBillSupplies($id) {
+    public function getBillSupplies($id)
+    {
         $supplies = BillSupply::with('supply')->where('bill_id', '=', $id)->get();
         return response()->json($supplies, 200);
 
+    }
+
+    public function updateBillSupply(Request $request, $id)
+    {
+
+        DB::beginTransaction();
+        try {
+            $billSupply = BillSupply::findOrFail($id);
+
+            $bill = Bill::findOrFail($billSupply->bill_id);
+
+            $supply = Supply::findOrFail($billSupply->supply_id);
+
+            $bill->total_amount -= (($billSupply->quantity - $request->quantity) * $billSupply->price);
+
+            $supply->quantity += ($billSupply->quantity - $request->quantity);
+
+            $billSupply->quantity = $request->quantity;
+
+            $supply->save();
+            $billSupply->save();
+            $bill->save();
+            DB::commit();
+            return response()->json(['message' => 'Cập nhập thành công', (($billSupply->quantity - $request->quantity) * $billSupply->price)]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Đã có lỗi xảy ra: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function deleteBillSupply($id)
+    {
+        DB::beginTransaction();
+        try {
+            $billSupply = BillSupply::findOrFail($id);
+
+            $bill = Bill::findOrFail($billSupply->bill_id);
+            $supply = Supply::findOrFail($billSupply->supply_id);
+
+            $supply->quantity += $billSupply->quantity;
+
+            $bill->total_amount -= ($billSupply->quantity * $billSupply->price);
+
+            $supply->save();
+            $bill->save();
+
+            $billSupply->delete();
+
+            DB::commit();
+
+            return response()->json(['message' => 'Xóa thành công']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Đã có lỗi xảy ra: ' . $e->getMessage()], 500);
+        }
     }
 }

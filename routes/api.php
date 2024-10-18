@@ -33,6 +33,7 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 
 Route::post('/zalopay/callback', [PaymentController::class, 'zalopayCallback']);
+Route::post('/zalopay/callbackBill', [PaymentController::class, 'zalopayCallbackBill']);
 Route::get('/auth/google', [AuthController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 
@@ -56,6 +57,7 @@ Route::group([
 
     // Zalopay
     Route::post('/zalopay', [PaymentController::class, 'createZaloPayOrder']);
+    Route::post('/zalopayBill', [PaymentController::class, 'createZaloPayForBill']);
     
 
     Route::group([
@@ -112,9 +114,13 @@ Route::group([
         ], function () {
             // Route::get('/booking', [BillController::class, 'getBillByBookingId']);
             Route::get('', [BillController::class, 'show']);
-            Route::post('addItems', [BillController::class, 'addItems']);
+            Route::post('/addItems', [BillController::class, 'addItems']);
+            Route::post('{id}', [BillController::class, 'createBill']);
+            Route::post('{id}/payment', [BillController::class, 'paymentBill']);
             
             Route::get('/details/{id}', [BillController::class, 'getBillSupplies']);
+            Route::post('/details/{id}', [BillController::class, 'updateBillSupply']);
+            Route::delete('/details/{id}', [BillController::class, 'deleteBillSupply']);
         });
 
         Route::group([
