@@ -67,6 +67,7 @@ class EquipmentController extends Controller
             $validatedData = $request->validate([
                 'name' => 'string|max:255',
                 'state' => 'string|in:available,in_use,damaged',
+                'serial_number' => 'required|string'
             ]);
 
             $equipment->update($validatedData);

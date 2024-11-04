@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\BookingController;
 use App\Models\Bill;
+use App\Models\Booking;
 
 class PaymentController extends Controller
 {
@@ -215,9 +216,13 @@ class PaymentController extends Controller
                 Log::info($embedData);
                 
                 $bill = Bill::findOrFail($embedData['bill_id']);
+                $booking = Booking::findOrFail($bill->booking_id);
+
+                $booking->status = "Đã thanh toán";
 
                 $bill->status = "Đã thanh toán";
 
+                $booking->save();
                 $bill->save();
                 Log::info($bill);
 

@@ -4,6 +4,7 @@ use App\Http\Controllers\BillController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\FieldPriceController;
 use App\Http\Controllers\ImportReceiptController;
+use App\Http\Controllers\ServiceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -130,7 +131,7 @@ Route::group([
             Route::get('/{serial_number}', [EquipmentController::class, 'show']);
             Route::post('', [EquipmentController::class, 'store']);
             Route::post('/{id}', [EquipmentController::class, 'update']);
-            Route::delete('/{id}', [EquipmentController::class, 'delete']);
+            Route::delete('/{id}', [EquipmentController::class, 'destroy']);
             Route::post('equipment/{equipment}/allocate', [EquipmentController::class, 'allocateToField']);
             Route::post('equipment/{equipment}/deallocate', [EquipmentController::class, 'deallocateFromField']);
         });
@@ -142,13 +143,21 @@ Route::group([
             Route::get('/{serial_number}', [SupplyController::class, 'show']);
             Route::post('', [SupplyController::class, 'store']);
             Route::post('/{id}', [SupplyController::class, 'update']);
-            Route::delete('/{id}', [SupplyController::class, 'delete']);
+            Route::delete('/{id}', [SupplyController::class, 'destroy']);
 
             //
             
 
         });
 
+        Route::group([
+            'prefix' => 'services',
+        ], function (){
+            Route::get('', [ServiceController::class, 'index']);
+            Route::post('', [ServiceController::class, 'store']);
+            Route::post('/{id}', [ServiceController::class, 'update']);
+            Route::delete('/{id}', [ServiceController::class, 'destroy']);
+        });
 
         Route::group([
             'prefix' => 'import-receipts',
@@ -173,6 +182,9 @@ Route::group([
         Route::get('/user-booking/{id}',[BookingController::class, 'getUserBooking']);
     });
 });
+
+
+
 
 
 Route::middleware('auth:api')->group(function () {

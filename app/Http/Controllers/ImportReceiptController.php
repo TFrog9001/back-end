@@ -360,10 +360,6 @@ class ImportReceiptController extends Controller
         }
     }
 
-
-
-
-
     public function delete($id)
     {
         $receipt = ImportReceipt::findOrFail($id);

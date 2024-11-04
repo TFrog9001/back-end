@@ -21,7 +21,7 @@ class BookingController extends Controller
      */
     public function index(Request $request)
     {
-        $bookings = Booking::with(['field', 'user'])
+        $bookings = Booking::with(['field', 'user', 'bill'])
             ->when($request->booking_date, function ($query, $booking_date) {
                 return $query->where('booking_date', $booking_date);
             })

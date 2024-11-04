@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Bill;
 use App\Models\Supply;
 use App\Models\BillSupply;
+use App\Models\Booking;
 
 use Illuminate\Support\Facades\DB;
 
@@ -111,7 +112,13 @@ class BillController extends Controller
     {
         try {
             $bill = Bill::findOrFail($id);
+
+            $booking = Booking::findOrFail($bill->booking_id);
+
+            $booking->status = "Đã thanh toán";
             $bill->status = "Đã thanh toán";
+
+            $booking->save();
             $bill->save();
             return response()->json($bill, 201);
         } catch (\Exception $e) {
