@@ -6,6 +6,8 @@ use App\Models\Booking;
 use App\Models\FieldPrice;
 use App\Models\User;
 use App\Models\Bill;
+use App\Models\Service;
+use App\Models\BillService;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -157,6 +159,9 @@ class BookingController extends Controller
                 'end_time' => 'required|date_format:H:i|after:start_time',
                 'user_name' => 'required_if:user_id,null',
                 'user_phone' => 'required_if:user_id,null',
+                'services' => 'array',
+                'services.*.service_id' => 'required|exists:services,id',
+                'services.*.staff_id' => 'required|exists:users,id',
             ]);
             // Nếu user_id rỗng, tạo user mới
             if (empty($request->user_id)) {
@@ -178,7 +183,18 @@ class BookingController extends Controller
             // Tính tổng giá tiền cho việc đặt sân
             $totalPrice = $this->calculateFieldPrice($request->field_id, $request->start_time, $request->end_time);
 
+            
+            // Tính thêm tiền dịch vụ
+            foreach ($request->services as $service) {
+                $serviceDetails = Service::find($service['service_id']);
+                $startTime = strtotime($request->start_time);
+                $endTime = strtotime($request->end_time);
+                $durationInHours = ($endTime - $startTime) / 3600; // Chuyển đổi chênh lệch từ giây sang giờ
 
+                // Tính phí dịch vụ
+                $totalPrice += ($serviceDetails->fee * $durationInHours);
+                
+            }
             if ($request->payment_method == "full") {
                 $status = "Đã thanh toán";
             } else if ($request->payment_method == "partial") {
@@ -204,13 +220,29 @@ class BookingController extends Controller
                 ['booking_id' => $booking->id],
             );
 
-            Log::info('207'.$bill);
+
+
+            Log::info('207' . $bill);
             $bill->total_amount = $booking->field_price - $booking->deposit;
             if ($booking->status === 'Đã thanh toán') {
                 $bill->total_amount = 0;
             }
 
             $bill->save();
+
+            foreach ($request->services as $service) {
+                $serviceDetails = Service::find($service['service_id']);
+                
+                // Lưu vào bảng bill_services
+                $billService = new BillService([
+                    'bill_id' => $bill->id,
+                    'service_id' => $service['service_id'],
+                    'staff_id' => $service['staff_id'],
+                    'fee' => $serviceDetails->fee,
+                ]);
+                $billService->save();
+            }
+
             DB::commit();
             return response()->json($booking, 201);
 

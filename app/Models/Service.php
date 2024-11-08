@@ -13,11 +13,18 @@ class Service extends Model
     protected $fillable = [
         'service',
         'description',
-        'fee'
+        'fee',
+        'role_id'
     ];
 
     public function billServices()
     {
         return $this->hasMany(BillService::class);
     }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+    
 }

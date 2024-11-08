@@ -4,6 +4,7 @@ use App\Http\Controllers\BillController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\FieldPriceController;
 use App\Http\Controllers\ImportReceiptController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -78,6 +79,15 @@ Route::group([
                 Route::post('', [UserController::class, 'addUser']);
                 Route::post('/{id}', [UserController::class, 'editUser']);
                 Route::delete('/{id}', [UserController::class, 'delete']);
+            }
+        );
+
+        Route::group(
+            [
+                'prefix' => 'roles',
+            ],
+            function () {
+                Route::get('', [RoleController::class, 'index']);
             }
         );
 

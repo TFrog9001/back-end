@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Service;
+use App\Models\User;
+
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
@@ -15,9 +17,19 @@ class ServiceController extends Controller
      */
     public function index()
     {
-        $services = Service::all();
+        $services = Service::with('role')->get()->map(function ($service) {
+            // Lấy các user có role_id trùng với role_id trong Service
+            $service->staffs = User::where('role_id', $service->role_id)->get();
+            return $service;
+        })->filter(function ($service) {
+            // Chỉ giữ lại các dịch vụ có staffs không rỗng
+            return $service->staffs->isNotEmpty();
+        })->values(); // Reset các key trong collection
+
         return response()->json($services);
     }
+
+
 
     /**
      * Tạo một dịch vụ mới.
@@ -29,6 +41,7 @@ class ServiceController extends Controller
                 'service' => 'required|string|max:50',
                 'description' => 'sometimes|string',
                 'fee' => 'required|numeric|min:0',
+                'role_id' => 'required'
             ]);
 
             $service = Service::create($validatedData);
@@ -68,6 +81,7 @@ class ServiceController extends Controller
                 'service' => 'sometimes|required|string|max:50',
                 'description' => 'sometimes|string',
                 'fee' => 'sometimes|required|numeric|min:0',
+                'role_id' => 'sometimes|required',
             ]);
 
             $service->update($validatedData);

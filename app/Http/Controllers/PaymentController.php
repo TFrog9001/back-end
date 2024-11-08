@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\BookingController;
 use App\Models\Bill;
 use App\Models\Booking;
+use App\Models\Service;
 
 class PaymentController extends Controller
 {
@@ -38,6 +39,17 @@ class PaymentController extends Controller
             end_time: $request->end_time
         );
 
+        foreach ($request->services as $service) {
+            $serviceDetails = Service::find($service['service_id']);
+            $startTime = strtotime($request->start_time);
+            $endTime = strtotime($request->end_time);
+            $durationInHours = ($endTime - $startTime) / 3600;
+
+            // Tính phí dịch vụ
+            $fieldPrice += ($serviceDetails->fee * $durationInHours);
+            
+        }
+
         $deposit = $fieldPrice * (40 / 100);
 
         $amount = 0;
@@ -62,6 +74,7 @@ class PaymentController extends Controller
                 'user_name' => $request->user_name,
                 'user_phone' => $request->user_phone,
                 'payment_method' => $request->payment_method,
+                'services' => $request->services,
                 'payment_type' => 'zalopay',
                 'redirecturl' => "http://127.0.0.1:3002/booking"
             ];

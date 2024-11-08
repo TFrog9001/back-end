@@ -201,7 +201,7 @@ class ImportReceiptController extends Controller
             'receiper_name' => 'required|string|max:50',
             'items' => 'required|array',
             'items.*.item_type' => 'required|in:supply,equipment',
-            'items.*.item_name' => 'required|string|max:255',
+            'items.*.item_name' => '|required|string|max:255',
             'items.*.serial_number' => 'required|string|max:50',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.price' => 'required|numeric|min:0',
