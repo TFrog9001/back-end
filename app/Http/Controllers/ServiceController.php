@@ -15,17 +15,22 @@ class ServiceController extends Controller
     /**
      * Lấy danh sách tất cả dịch vụ.
      */
-    public function index()
+    public function serviceWithStaff()
     {
         $services = Service::with('role')->get()->map(function ($service) {
             // Lấy các user có role_id trùng với role_id trong Service
             $service->staffs = User::where('role_id', $service->role_id)->get();
             return $service;
         })->filter(function ($service) {
-            // Chỉ giữ lại các dịch vụ có staffs không rỗng
             return $service->staffs->isNotEmpty();
         })->values(); // Reset các key trong collection
 
+        return response()->json($services);
+    }
+
+    public function index()
+    {
+        $services = Service::with('role')->get();
         return response()->json($services);
     }
 

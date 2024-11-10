@@ -164,6 +164,7 @@ Route::group([
             'prefix' => 'services',
         ], function (){
             Route::get('', [ServiceController::class, 'index']);
+            Route::get('/staff', [ServiceController::class, 'serviceWithStaff']);
             Route::post('', [ServiceController::class, 'store']);
             Route::post('/{id}', [ServiceController::class, 'update']);
             Route::delete('/{id}', [ServiceController::class, 'destroy']);

@@ -50,7 +50,7 @@ class BookingController extends Controller
      */
     public function show($id)
     {
-        $booking = Booking::with(['field', 'user', 'bill.supplies.supply'])->find($id);
+        $booking = Booking::with(['field', 'user', 'bill.supplies.supply', 'bill.services.staff', 'bill.services.service'])->find($id);
 
         if (!$booking) {
             return response()->json(['message' => 'Booking not found'], 404);
