@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Storage;
 
 class SupplyController extends Controller
 {
@@ -27,12 +28,23 @@ class SupplyController extends Controller
         try {
             $validatedData = $request->validate([
                 'name' => 'required|string|max:255',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
                 'quantity' => 'required|integer|min:0',
                 'price' => 'required|numeric|min:0',
                 'state' => 'sometimes|string|max:50',
             ]);
 
-            $supply = Supply::create($validatedData);
+            $imagePath = null;
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('images/supplies', 'public');
+            }
+
+            $supply = Supply::create([
+                'name' => $request->name,
+                'quantity' => $request->quantity,
+                'price' => $request->price,
+                'image' => $imagePath,
+            ]);
 
             return response()->json($supply, 201);
         } catch (ValidationException $e) {
@@ -50,7 +62,7 @@ class SupplyController extends Controller
     public function show($serial_number)
     {
         try {
-            $supply = Supply::where('serial_number',$serial_number)->get();
+            $supply = Supply::where('serial_number', $serial_number)->get();
             return response()->json($supply);
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Supply not found'], 404);
@@ -70,8 +82,22 @@ class SupplyController extends Controller
                 'quantity' => 'sometimes|required|integer|min:0',
                 'price' => 'sometimes|required|numeric|min:0',
                 'state' => 'sometimes|string|max:50',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
             ]);
 
+            if ($request->hasFile('image') && $request->file('image')->isValid()) {
+                if ($supply->image) {
+                    Storage::disk('public')->delete($supply->image);
+                }
+                $validatedData['image'] = $request->file('image')->store('images/supplies', 'public');
+            }
+
+            // Loại bỏ các trường null trước khi cập nhật
+            $validatedData = array_filter($validatedData, function ($value) {
+                return $value !== null;
+            });
+
+            // Cập nhật bản ghi
             $supply->update($validatedData);
 
             return response()->json($supply);
@@ -85,6 +111,8 @@ class SupplyController extends Controller
             return response()->json(['error' => 'An unexpected error occurred: ' . $e->getMessage()], 500);
         }
     }
+
+
 
     /**
      * Xóa một hàng tiêu dùng cụ thể.

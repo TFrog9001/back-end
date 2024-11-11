@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Storage;
 
 class EquipmentController extends Controller
 {
@@ -69,6 +70,18 @@ class EquipmentController extends Controller
                 'state' => 'string|in:available,in_use,damaged',
                 'serial_number' => 'required|string'
             ]);
+
+            if ($request->hasFile('image') && $request->file('image')->isValid()) {
+                if ($equipment->image) {
+                    Storage::disk('public')->delete($equipment->image);
+                }
+                $validatedData['image'] = $request->file('image')->store('images/supplies', 'public');
+            }
+
+            // Loại bỏ các trường null trước khi cập nhật
+            $validatedData = array_filter($validatedData, function ($value) {
+                return $value !== null;
+            });
 
             $equipment->update($validatedData);
 

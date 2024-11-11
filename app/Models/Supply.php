@@ -13,6 +13,7 @@ class Supply extends Model
     protected $fillable = [
         'serial_number',
         'name',
+        'image',
         'quantity',
         'price',
         'state',
