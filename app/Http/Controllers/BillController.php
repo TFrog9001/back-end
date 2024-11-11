@@ -79,6 +79,7 @@ class BillController extends Controller
                         'bill_id' => $bill->id,
                         'id' => $existingSupply ? $existingSupply->id : $billSupply->id, // ID từ BillSupply
                         'name' => $supply->name,
+                        'image' => $supply->image,
                     ];
                 }
 

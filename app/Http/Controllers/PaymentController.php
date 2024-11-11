@@ -47,7 +47,7 @@ class PaymentController extends Controller
 
             // Tính phí dịch vụ
             $fieldPrice += ($serviceDetails->fee * $durationInHours);
-            
+
         }
 
         $deposit = $fieldPrice * (40 / 100);
@@ -114,7 +114,7 @@ class PaymentController extends Controller
     }
 
     public function zalopayCallback()
-    {   
+    {
         Log::info("Hello callback");
         $result = [];
 
@@ -141,7 +141,7 @@ class PaymentController extends Controller
                 $result["return_message"] = "success";
             }
         } catch (\Exception $e) {
-            Log::info('return'. $e);
+            Log::info('return' . $e);
             $result["return_code"] = 0;
             $result["return_message"] = $e->getMessage();
         }
@@ -151,27 +151,53 @@ class PaymentController extends Controller
 
     function createZaloPayForBill(Request $request)
     {
-        // Log::info('thong tin vao' . $request);
+        // Cấu hình ZaloPay
         $config = [
             "app_id" => 2554,
             "key1" => "sdngKKJmqEMzvh5QQcdD2A9XBSKUNaYn",
             "key2" => "trMrHtvjo6myautxDUiAcYsVtaeQ8nhf",
             "endpoint" => "https://sb-openapi.zalopay.vn/v2/create"
         ];
-        // $embeddata = '{}';
 
-        $bill = Bill::findOrFail($request->bill_id);
+        // Tìm hóa đơn
+        $bill = Bill::with('supplies.supply', 'services.service', 'booking')->findOrFail($request->bill_id);
 
-        $amount = intval($bill->total_amount);
+        // Lấy thông tin booking và trạng thái thanh toán
+        $booking = $bill->booking;
+        $fieldPrice = floatval($booking->field_price);
+        $deposit = floatval($booking->deposit);
+        $status = $booking->status;
 
-        $embeddata =
-            [   
-                'bill_id' => $request->bill_id,
-                'redirecturl' => "http://127.0.0.1:3002/booking"
-            ];
+        // Tính chi phí vật phẩm
+        $suppliesTotal = $bill->supplies->reduce(function ($total, $supply) {
+            return $total + ($supply->quantity * $supply->price);
+        }, 0);
+
+        // Tính chi phí dịch vụ
+        $servicesTotal = $bill->services->reduce(function ($total, $service) {
+            return $total + $service->fee;
+        }, 0);
+
+        // Tính tổng chi phí trước khi trừ đặt cọc
+        // Nếu booking đã thanh toán, không cộng phí sân vào tổng tiền
+        $totalAmount = $suppliesTotal + $servicesTotal;
+        if ($status !== "Đã thanh toán") {
+            $totalAmount += $fieldPrice;
+        }
+
+        // Trừ khoản đặt cọc nếu có
+        $amount = max(0, $totalAmount - $deposit);
+
+        // Chuẩn bị dữ liệu cho ZaloPay
+        $embeddata = [
+            'bill_id' => $request->bill_id,
+            'redirecturl' => "http://127.0.0.1:3002/booking"
+        ];
+
         Log::info('embed_data_create' . json_encode($embeddata));
-        Log::info($bill->total_amount);
-        $items = '[]';
+        Log::info("Calculated amount for ZaloPay: " . $amount);
+
+        $items = '[]'; // Nếu cần, bạn có thể thêm chi tiết các vật phẩm trong mảng items
         $transID = rand(0, 1000000);
         $order = [
             "app_id" => $config["app_id"],
@@ -181,16 +207,17 @@ class PaymentController extends Controller
             "item" => $items,
             "embed_data" => json_encode($embeddata),
             "amount" => $amount,
-            "description" => " Thanh toán hóa đơn #$transID",
+            "description" => "Thanh toán hóa đơn #$transID",
             "bank_code" => "zalopayapp",
             "callback_url" => "https://mlatbooking.serveo.net/api/zalopay/callbackBill",
         ];
 
-        // appid|app_trans_id|appuser|amount|apptime|embeddata|item
+        // Tạo chữ ký cho ZaloPay
         $data = $order["app_id"] . "|" . $order["app_trans_id"] . "|" . $order["app_user"] . "|" . $order["amount"]
             . "|" . $order["app_time"] . "|" . $order["embed_data"] . "|" . $order["item"];
         $order["mac"] = hash_hmac("sha256", $data, $config["key1"]);
 
+        // Gửi yêu cầu tới ZaloPay
         $context = stream_context_create([
             "http" => [
                 "header" => "Content-type: application/x-www-form-urlencoded\r\n",
@@ -206,8 +233,9 @@ class PaymentController extends Controller
     }
 
 
+
     public function zalopayCallbackBill()
-    {   
+    {
         Log::info("Hello callback");
         $result = [];
 
@@ -227,7 +255,7 @@ class PaymentController extends Controller
                 $embedData = json_decode($datajson['embed_data'], true);
 
                 Log::info($embedData);
-                
+
                 $bill = Bill::findOrFail($embedData['bill_id']);
                 $booking = Booking::findOrFail($bill->booking_id);
 
@@ -243,7 +271,7 @@ class PaymentController extends Controller
                 $result["return_message"] = "success";
             }
         } catch (\Exception $e) {
-            Log::info('return'. $e);
+            Log::info('return' . $e);
             $result["return_code"] = 0;
             $result["return_message"] = $e->getMessage();
         }

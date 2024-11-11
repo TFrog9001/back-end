@@ -362,8 +362,69 @@ class ImportReceiptController extends Controller
 
     public function delete($id)
     {
-        $receipt = ImportReceipt::findOrFail($id);
-        $receipt->delete();
-        return response()->json(['message' => 'Xóa phiếu nhập thành công'], 200);
+        // Bắt đầu transaction
+        \DB::beginTransaction();
+
+        try {
+            // Tìm phiếu nhập
+            $receipt = ImportReceipt::findOrFail($id);
+
+            // Lấy chi tiết phiếu nhập
+            $details = $receipt->details;
+
+            foreach ($details as $detail) {
+                if ($detail->item_type === 'supply') {
+                    // Tìm supply trong bảng Supply
+                    $supply = Supply::findOrFail($detail->item_id);
+
+                    // Kiểm tra số lượng tồn kho hiện tại
+                    if ($supply->quantity >= $detail->quantity) {
+                        // Nếu đủ số lượng, trừ số lượng đúng theo detail
+                        $supply->quantity -= $detail->quantity;
+                    } else {
+                        // Nếu không đủ, chỉ trừ số lượng tồn kho hiện tại
+                        Log::warning("Không đủ số lượng để trừ cho sản phẩm ID: {$supply->id}. Trừ hết số lượng tồn kho hiện tại.");
+                        $supply->quantity = 0;
+                    }
+
+                    $supply->save();
+                } elseif ($detail->item_type === 'equipment') {
+                    // Tìm equipment trong bảng Equipment
+                    $equipment = Equipment::findOrFail($detail->item_id);
+
+                    // Kiểm tra số lượng tồn kho hiện tại
+                    if ($equipment->quantity >= $detail->quantity) {
+                        // Nếu đủ số lượng, trừ số lượng đúng theo detail
+                        $equipment->quantity -= $detail->quantity;
+                    } else {
+                        // Nếu không đủ, chỉ trừ số lượng tồn kho hiện tại
+                        Log::warning("Không đủ số lượng để trừ cho thiết bị ID: {$equipment->id}. Trừ hết số lượng tồn kho hiện tại.");
+                        $equipment->quantity = 0;
+                    }
+
+                    $equipment->save();
+                }
+            }
+
+            // Xóa chi tiết phiếu nhập
+            ImportReceiptDetail::where('receipt_id', $receipt->id)->delete();
+
+            // Xóa phiếu nhập
+            $receipt->delete();
+
+            // Commit transaction
+            \DB::commit();
+
+            return response()->json(['message' => 'Xóa phiếu nhập thành công và cập nhật số lượng.'], 200);
+        } catch (\Exception $e) {
+            // Rollback transaction nếu có lỗi
+            \DB::rollBack();
+
+            return response()->json([
+                'message' => 'Có lỗi xảy ra khi xóa phiếu nhập.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
+
 }

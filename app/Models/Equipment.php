@@ -13,6 +13,7 @@ class Equipment extends Model
     protected $fillable = [
         'serial_number',
         'name',
+        'image',
         'quantity',
     ];
 

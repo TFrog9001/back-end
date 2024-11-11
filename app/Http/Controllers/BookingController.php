@@ -181,6 +181,7 @@ class BookingController extends Controller
             }
 
             // Tính tổng giá tiền cho việc đặt sân
+            $totalPriceBooking = $this->calculateFieldPrice($request->field_id, $request->start_time, $request->end_time);
             $totalPrice = $this->calculateFieldPrice($request->field_id, $request->start_time, $request->end_time);
 
             
@@ -189,7 +190,7 @@ class BookingController extends Controller
                 $serviceDetails = Service::find($service['service_id']);
                 $startTime = strtotime($request->start_time);
                 $endTime = strtotime($request->end_time);
-                $durationInHours = ($endTime - $startTime) / 3600; // Chuyển đổi chênh lệch từ giây sang giờ
+                $durationInHours = ($endTime - $startTime) / 3600;
 
                 // Tính phí dịch vụ
                 $totalPrice += ($serviceDetails->fee * $durationInHours);
@@ -197,6 +198,7 @@ class BookingController extends Controller
             }
             if ($request->payment_method == "full") {
                 $status = "Đã thanh toán";
+                $deposit = $totalPrice;
             } else if ($request->payment_method == "partial") {
                 $status = "Đã cọc";
                 $deposit = $totalPrice * 0.4;
@@ -210,7 +212,7 @@ class BookingController extends Controller
                 'booking_date' => $request->booking_date,
                 'start_time' => $request->start_time,
                 'end_time' => $request->end_time,
-                'field_price' => $totalPrice,
+                'field_price' => $totalPriceBooking,
                 'deposit' => $deposit ?? 0,
                 'payment_type' => $request->payment_type ?? 'direct',
                 'status' => $status,
@@ -220,13 +222,7 @@ class BookingController extends Controller
                 ['booking_id' => $booking->id],
             );
 
-
-
-            Log::info('207' . $bill);
-            $bill->total_amount = $booking->field_price - $booking->deposit;
-            if ($booking->status === 'Đã thanh toán') {
-                $bill->total_amount = 0;
-            }
+            $bill->total_amount = $totalPrice;
 
             $bill->save();
 
