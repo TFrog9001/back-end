@@ -27,7 +27,8 @@ class ImportReceiptController extends Controller
 
     public function store(Request $request)
     {
-        // Xác thực dữ liệu đầu vào
+        Log::info($request->all());
+
         $validatedData = $request->validate([
             'user_id' => 'required|integer|exists:users,id',
             'receiper_name' => 'required|string|max:50',
@@ -37,9 +38,9 @@ class ImportReceiptController extends Controller
             'items.*.serial_number' => 'required|string|max:50',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.price' => 'required|numeric|min:0',
+            'items.*.image' => 'nullable|file|mimes:jpg,png,jpeg|max:2048',
         ]);
 
-        // Bắt đầu transaction
         \DB::beginTransaction();
 
         try {
@@ -52,13 +53,10 @@ class ImportReceiptController extends Controller
                 'updated_at' => now(),
             ]);
 
-            // Khởi tạo tổng tiền
             $totalAmount = 0;
 
-            foreach ($validatedData['items'] as $item) {
-                // Tìm item trong bảng supplies hoặc equipments dựa vào item_type
+            foreach ($validatedData['items'] as $index => $item) {
                 $existingItem = null;
-
                 if ($item['item_type'] === 'supply') {
                     $existingItem = Supply::where('name', $item['item_name'])
                         ->where('serial_number', $item['serial_number'])
@@ -70,11 +68,9 @@ class ImportReceiptController extends Controller
                 }
 
                 if ($existingItem) {
-                    // Nếu item đã có trong bảng, tăng quantity
                     $existingItem->quantity += $item['quantity'];
                     $existingItem->save();
 
-                    // Lưu chi tiết phiếu nhập
                     ImportReceiptDetail::create([
                         'receipt_id' => $importReceipt->id,
                         'item_type' => $item['item_type'],
@@ -85,63 +81,47 @@ class ImportReceiptController extends Controller
                         'updated_at' => now(),
                     ]);
 
-                    // Tính tổng tiền
                     $totalAmount += $item['quantity'] * $item['price'];
                 } else {
-                    // Nếu item không tồn tại, tạo mới
-                    if ($item['item_type'] === 'supply') {
-                        $newSupply = Supply::create([
-                            'name' => $item['item_name'],
-                            'serial_number' => $item['serial_number'],
-                            'quantity' => $item['quantity'],
-                            'price' => $item['price'],
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
+                    $newItemData = [
+                        'name' => $item['item_name'],
+                        'serial_number' => $item['serial_number'],
+                        'quantity' => $item['quantity'],
+                        'price' => $item['price'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
 
-                        // Lưu chi tiết phiếu nhập
-                        ImportReceiptDetail::create([
-                            'receipt_id' => $importReceipt->id,
-                            'item_type' => 'supply',
-                            'item_id' => $newSupply->id,
-                            'quantity' => $item['quantity'],
-                            'price' => $item['price'],
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-
-                        // Tính tổng tiền
-                        $totalAmount += $item['quantity'] * $item['price'];
-                    } elseif ($item['item_type'] === 'equipment') {
-                        $newEquipment = Equipment::create([
-                            'name' => $item['item_name'],
-                            'serial_number' => $item['serial_number'],
-                            'quantity' => $item['quantity'],
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-
-                        // Lưu chi tiết phiếu nhập
-                        ImportReceiptDetail::create([
-                            'receipt_id' => $importReceipt->id,
-                            'item_type' => 'equipment',
-                            'item_id' => $newEquipment->id,
-                            'quantity' => $item['quantity'],
-                            'price' => $item['price'],
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-
-                        // Tính tổng tiền
-                        $totalAmount += $item['quantity'] * $item['price'];
+                    // Handle image upload if image is present in request
+                    if ($request->hasFile("items.$index.image")) {
+                        $image = $request->file("items.$index.image");
+                        $imagePath = $image->store('images', 'public'); // Save image to 'storage/public/images'
+                        $newItemData['image'] = $imagePath;
                     }
+
+                    if ($item['item_type'] === 'supply') {
+                        $newSupply = Supply::create($newItemData);
+                        $itemId = $newSupply->id;
+                    } elseif ($item['item_type'] === 'equipment') {
+                        $newEquipment = Equipment::create($newItemData);
+                        $itemId = $newEquipment->id;
+                    }
+
+                    ImportReceiptDetail::create([
+                        'receipt_id' => $importReceipt->id,
+                        'item_type' => $item['item_type'],
+                        'item_id' => $itemId,
+                        'quantity' => $item['quantity'],
+                        'price' => $item['price'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    $totalAmount += $item['quantity'] * $item['price'];
                 }
             }
 
-            // Cập nhật tổng tiền cho phiếu nhập
             $importReceipt->update(['total_amount' => $totalAmount]);
-
-            // Commit transaction
             \DB::commit();
 
             return response()->json([
@@ -149,15 +129,15 @@ class ImportReceiptController extends Controller
                 'receipt_id' => $importReceipt->id,
             ], 201);
         } catch (\Exception $e) {
-            // Rollback transaction nếu có lỗi
             \DB::rollBack();
-
             return response()->json([
                 'message' => 'Có lỗi xảy ra khi tạo phiếu nhập.',
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
+
+
 
     public function show($id)
     {
@@ -184,6 +164,7 @@ class ImportReceiptController extends Controller
                     'item_type' => $detail->item_type,
                     'item_id' => $detail->item_id,
                     'quantity' => $detail->quantity,
+                    'image' => $item->image,
                     'price' => $detail->price,
                     'serial_number' => $item ? $item->serial_number : null, // Lấy serial_number cho equipment
                     'item_name' => $item ? $item->name : null, // Lấy tên cho supply hoặc equipment
