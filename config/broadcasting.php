@@ -2,31 +2,7 @@
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Default Broadcaster
-    |--------------------------------------------------------------------------
-    |
-    | This option controls the default broadcaster that will be used by the
-    | framework when an event needs to be broadcast. You may set this to
-    | any of the connections defined in the "connections" array below.
-    |
-    | Supported: "pusher", "ably", "redis", "log", "null"
-    |
-    */
-
     'default' => env('BROADCAST_DRIVER', 'null'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Broadcast Connections
-    |--------------------------------------------------------------------------
-    |
-    | Here you may define all of the broadcast connections that will be used
-    | to broadcast events to other systems or over websockets. Samples of
-    | each available type of connection are provided inside this array.
-    |
-    */
 
     'connections' => [
         'pusher' => [
@@ -35,11 +11,11 @@ return [
             'secret' => env('PUSHER_APP_SECRET'),
             'app_id' => env('PUSHER_APP_ID'),
             'options' => [
-                'host' => env('LARAVEL_WEBSOCKETS_HOST'), 
-                'port' => env('LARAVEL_WEBSOCKETS_PORT'), 
-                'cluster' => env('LARAVEL_WEBSOCKETS_CLUSTER'),
-                'useTLS' => false,
-                'scheme' => 'http',
+                'host' => env('LARAVEL_WEBSOCKETS_HOST', '127.0.0.1'),
+                'port' => env('LARAVEL_WEBSOCKETS_PORT', 6001),
+                'cluster' => env('PUSHER_APP_CLUSTER', 'ap1'),
+                'useTLS' => env('PUSHER_SCHEME') === 'https',  // Cập nhật `useTLS` theo scheme
+                'scheme' => env('PUSHER_SCHEME', 'http'),
                 'encrypted' => false,
             ],
         ],
@@ -61,7 +37,6 @@ return [
         'null' => [
             'driver' => 'null',
         ],
-
     ],
 
 ];

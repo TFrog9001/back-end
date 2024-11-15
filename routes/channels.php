@@ -26,4 +26,8 @@ Broadcast::channel('booking.{bookingId}', function ($user, $bookingId) {
     return (int) $user->id === (int) $booking->user_id || $user->isEmployee();
 });
 
+Broadcast::channel('staff-notifications', function ($user, $id) {
+    return (int) $user->id === (int) $id;
+});
+
 

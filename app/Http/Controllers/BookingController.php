@@ -215,6 +215,7 @@ class BookingController extends Controller
                 'field_price' => $totalPriceBooking,
                 'deposit' => $deposit ?? 0,
                 'payment_type' => $request->payment_type ?? 'direct',
+                'paypal_id' => $request->paypal_id ?? '',
                 'status' => $status,
             ]);
 

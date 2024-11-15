@@ -38,7 +38,7 @@ class ImportReceiptController extends Controller
             'items.*.serial_number' => 'required|string|max:50',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.price' => 'required|numeric|min:0',
-            'items.*.image' => 'nullable|file|mimes:jpg,png,jpeg|max:2048',
+            'items.*.image' => 'nullable|file|mimes:jpg,png,jpeg,webp|max:2048',
         ]);
 
         \DB::beginTransaction();

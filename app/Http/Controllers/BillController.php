@@ -8,6 +8,8 @@ use App\Models\Supply;
 use App\Models\BillSupply;
 use App\Models\Booking;
 
+use App\Events\NotificationSent;
+
 use Illuminate\Support\Facades\DB;
 
 class BillController extends Controller
@@ -86,6 +88,9 @@ class BillController extends Controller
                 // Cập nhật tổng số tiền của hóa đơn
                 $bill->total_amount += $total_amount;
                 $bill->save();
+
+                $message = "Người dùng đã thêm sản phẩm vào hóa đơn #{$bill->id}. Tổng tiền mới: " . number_format($bill->total_amount) . " VND";
+                broadcast(new NotificationSent($message))->toOthers();
             });
 
             return response()->json([

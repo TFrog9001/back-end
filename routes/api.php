@@ -53,14 +53,14 @@ Route::group([
             Route::post('/logout', [AuthController::class, 'logout']);
             Route::get('/me', [AuthController::class, 'me']);
             Route::post('/check/time', [AuthController::class, 'checkRefreshTokenExpiration']);
-            
+
         }
     );
 
     // Zalopay
     Route::post('/zalopay', [PaymentController::class, 'createZaloPayOrder']);
     Route::post('/zalopayBill', [PaymentController::class, 'createZaloPayForBill']);
-    
+
 
     Route::group([
         // 'middleware' => ['check.admin', 'check.staff'],
@@ -128,7 +128,7 @@ Route::group([
             Route::post('/addItems', [BillController::class, 'addItems']);
             Route::post('{id}', [BillController::class, 'createBill']);
             Route::post('{id}/payment', [BillController::class, 'paymentBill']);
-            
+
             Route::get('/details/{id}', [BillController::class, 'getBillSupplies']);
             Route::post('/details/{id}', [BillController::class, 'updateBillSupply']);
             Route::delete('/details/{id}', [BillController::class, 'deleteBillSupply']);
@@ -156,13 +156,13 @@ Route::group([
             Route::delete('/{id}', [SupplyController::class, 'destroy']);
 
             //
-            
+
 
         });
 
         Route::group([
             'prefix' => 'services',
-        ], function (){
+        ], function () {
             Route::get('', [ServiceController::class, 'index']);
             Route::get('/staff', [ServiceController::class, 'serviceWithStaff']);
             Route::post('', [ServiceController::class, 'store']);
@@ -172,12 +172,12 @@ Route::group([
 
         Route::group([
             'prefix' => 'import-receipts',
-        ], function() {
-            Route::get('', [ImportReceiptController::class,'index']);
-            Route::get('{id}', [ImportReceiptController::class,'show']);
-            Route::post('', [ImportReceiptController::class,'store']);
+        ], function () {
+            Route::get('', [ImportReceiptController::class, 'index']);
+            Route::get('{id}', [ImportReceiptController::class, 'show']);
+            Route::post('', [ImportReceiptController::class, 'store']);
             Route::post('/{id}', [ImportReceiptController::class, 'update']);
-            Route::delete('/{id}', [ImportReceiptController::class,'delete']);
+            Route::delete('/{id}', [ImportReceiptController::class, 'delete']);
         });
 
         Route::group([
@@ -189,8 +189,8 @@ Route::group([
 
     Route::group([
 
-    ], function(){
-        Route::get('/user-booking/{id}',[BookingController::class, 'getUserBooking']);
+    ], function () {
+        Route::get('/user-booking/{id}', [BookingController::class, 'getUserBooking']);
     });
 });
 
