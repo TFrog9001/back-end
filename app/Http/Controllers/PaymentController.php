@@ -168,23 +168,21 @@ class PaymentController extends Controller
         $deposit = floatval($booking->deposit);
         $status = $booking->status;
 
-        // Tính chi phí vật phẩm
-        $suppliesTotal = $bill->supplies->reduce(function ($total, $supply) {
-            return $total + ($supply->quantity * $supply->price);
-        }, 0);
+        // // Tính chi phí vật phẩm
+        // $suppliesTotal = $bill->supplies->reduce(function ($total, $supply) {
+        //     return $total + ($supply->quantity * $supply->price);
+        // }, 0);
 
-        // Tính chi phí dịch vụ
-        $servicesTotal = $bill->services->reduce(function ($total, $service) {
-            return $total + $service->fee;
-        }, 0);
+        // // Tính chi phí dịch vụ
+        // $servicesTotal = $bill->services->reduce(function ($total, $service) {
+        //     return $total + $service->fee;
+        // }, 0);
 
         // Tính tổng chi phí trước khi trừ đặt cọc
         // Nếu booking đã thanh toán, không cộng phí sân vào tổng tiền
-        $totalAmount = $suppliesTotal + $servicesTotal;
-        if ($status !== "Đã thanh toán") {
-            $totalAmount += $fieldPrice;
-        }
-
+        // $totalAmount = $suppliesTotal + $servicesTotal;
+        $totalAmount = $bill->total_amount;
+        
         // Trừ khoản đặt cọc nếu có
         $amount = max(0, $totalAmount - $deposit);
 

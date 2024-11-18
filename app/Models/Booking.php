@@ -19,6 +19,7 @@ class Booking extends Model
         'field_price',
         'status',
         'payment_type',
+        'paypal_id',
         'deposit',
     ];
 
@@ -41,5 +42,10 @@ class Booking extends Model
     public function bill()
     {
         return $this->belongsTo(Bill::class, 'id', 'booking_id');
+    }
+
+    public function bills()
+    {
+        return $this->hasMany(Bill::class, 'booking_id');
     }
 }

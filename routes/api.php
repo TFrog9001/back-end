@@ -4,6 +4,7 @@ use App\Http\Controllers\BillController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\FieldPriceController;
 use App\Http\Controllers\ImportReceiptController;
+use App\Http\Controllers\RevenueController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Http\Request;
@@ -119,6 +120,7 @@ Route::group([
             Route::post('', [BookingController::class, 'store']);
             Route::post('/{id}', [BookingController::class, 'update']);
             Route::delete('/{id}', [BookingController::class, 'delete']);
+            Route::post('/{id}/cancel', [BookingController::class, 'cancel']);
         });
         Route::group([
             'prefix' => 'bills',
@@ -185,6 +187,14 @@ Route::group([
         ], function () {
             // Route::resource('/roles', [RoleController::class]);
         });
+
+
+        Route::group([
+            'prefix' => 'revenue',
+        ], function () {
+            Route::get('', [RevenueController::class, 'revenueByYear']);
+        });
+        
     });
 
     Route::group([

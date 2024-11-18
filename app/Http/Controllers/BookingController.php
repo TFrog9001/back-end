@@ -11,6 +11,7 @@ use App\Models\BillService;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -149,6 +150,7 @@ class BookingController extends Controller
     public function store(Request $request)
     {
         Log::error('Hello');
+        Log::info($request->all());
         DB::beginTransaction();
         try {
             // Validate các dữ liệu đầu vào
@@ -184,7 +186,7 @@ class BookingController extends Controller
             $totalPriceBooking = $this->calculateFieldPrice($request->field_id, $request->start_time, $request->end_time);
             $totalPrice = $this->calculateFieldPrice($request->field_id, $request->start_time, $request->end_time);
 
-            
+
             // Tính thêm tiền dịch vụ
             foreach ($request->services as $service) {
                 $serviceDetails = Service::find($service['service_id']);
@@ -194,7 +196,7 @@ class BookingController extends Controller
 
                 // Tính phí dịch vụ
                 $totalPrice += ($serviceDetails->fee * $durationInHours);
-                
+
             }
             if ($request->payment_method == "full") {
                 $status = "Đã thanh toán";
@@ -215,7 +217,7 @@ class BookingController extends Controller
                 'field_price' => $totalPriceBooking,
                 'deposit' => $deposit ?? 0,
                 'payment_type' => $request->payment_type ?? 'direct',
-                'paypal_id' => $request->paypal_id ?? '',
+                'paypal_id' => $request->paypal_id ?? null,
                 'status' => $status,
             ]);
 
@@ -229,7 +231,7 @@ class BookingController extends Controller
 
             foreach ($request->services as $service) {
                 $serviceDetails = Service::find($service['service_id']);
-                
+
                 // Lưu vào bảng bill_services
                 $billService = new BillService([
                     'bill_id' => $bill->id,
@@ -296,4 +298,147 @@ class BookingController extends Controller
         $booking->delete();
         return response()->json(['message' => 'Booking deleted successfully']);
     }
+
+    public function cancel($id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        if (!$booking) {
+            return response()->json(['message' => 'Không tìm thấy booking'], 404);
+        }
+
+        // Lấy thời gian bắt đầu của booking và ngày đặt
+        $bookingStartTime = strtotime($booking->booking_date . ' ' . $booking->start_time);
+
+        // Lấy thời gian hiện tại
+        $currentTime = time();
+
+        // Kiểm tra nếu booking bị hủy ít nhất 1 giờ trước khi bắt đầu trận đấu
+        if ($bookingStartTime - $currentTime >= 3600) {  // 3600 giây = 1 giờ
+            // Nếu payment_type là paypal, thực hiện hoàn tiền
+            if ($booking->payment_type === 'paypal') {
+                try {
+                    $refundSuccess = $this->refundPayment($booking->paypal_id);
+                    if ($refundSuccess) {
+                        $booking->status = 'Hủy';
+                        $booking->save();
+
+                        return response()->json([
+                            'message' => 'Booking đã bị hủy và hoàn tiền thành công.',
+                        ], 200);
+                    } else {
+                        return response()->json([
+                            'message' => 'Không thể xử lý hoàn tiền.',
+                        ], 500);
+                    }
+                } catch (Exception $e) {
+                    return response()->json([
+                        'message' => 'Đã xảy ra lỗi trong quá trình hoàn tiền.',
+                        'error' => $e->getMessage(),
+                    ], 500);
+                }
+            } else {
+                // Nếu không phải thanh toán bằng PayPal, chỉ thay đổi trạng thái
+                $booking->status = 'Hủy';
+                $booking->save();
+
+                return response()->json([
+                    'message' => 'Booking đã bị hủy thành công.',
+                ], 200);
+            }
+        } else {
+            // Nếu hủy trong vòng 1 giờ trước khi bắt đầu trận đấu, không hoàn cọc
+            $booking->status = 'Hủy';
+            $booking->save();
+
+            return response()->json([
+                'message' => 'Booking đã bị hủy. Không hoàn tiền cọc trong vòng 1 giờ trước giờ đá.',
+            ], 200);
+        }
+    }
+
+    protected function refundPayment($paypalId)
+    {
+        // Thông tin API PayPal (Sử dụng token truy cập)
+        $clientId = "AR-__Sbyg9YxPWMoLn7Aj2HJJY0ymqMe6JpsDq_xd2tk_V5-KKAr4JYIQ_ldqRfuJ3GwC7x0-eJ9V62d";
+        $secret = "EIc--r_538vcm1rB8_hPqbEkwo_xxr9s4oTPHZp8JW4ezXxy7V3Og20Yu4S-FVUBAp8inuRI2KRu4zoW";
+
+        // Lấy access token từ PayPal API
+        $accessToken = $this->getPayPalAccessToken($clientId, $secret);
+        Log::info($accessToken);
+        if (!$accessToken) {
+            throw new Exception('Failed to retrieve PayPal access token.');
+        }
+
+        // Lấy thông tin booking để tính toán số tiền hoàn trả
+        $booking = Booking::where('paypal_id', $paypalId)->first();
+        Log::info($paypalId);
+        if (!$booking) {
+            throw new Exception('Booking not found for the given PayPal ID.');
+        }
+
+        // Số tiền deposit trong VND
+        $depositVND = $booking->deposit;
+
+        // Chuyển đổi deposit từ VND sang USD
+        $depositUSD = $depositVND / 24000;  // Tỷ giá 24000 VND = 1 USD
+        Log::info($depositUSD);
+
+        // Gửi yêu cầu hoàn tiền
+        $refundUrl = "https://api-m.sandbox.paypal.com/v2/payments/captures/{$paypalId}/refund";
+
+        $response = $this->sendRefundRequest($accessToken, $refundUrl, $depositUSD);
+
+        // Kiểm tra kết quả phản hồi
+        if ($response['status'] === 'success') {
+            return true; // Hoàn tiền thành công
+        } else {
+            throw new Exception('Refund failed: ' . $response['message']);
+        }
+    }
+
+    protected function sendRefundRequest($accessToken, $url, $amount)
+    {
+        // Gửi yêu cầu hoàn tiền với số tiền đã chuyển sang USD
+        $response = Http::withHeaders([
+            'Authorization' => "Bearer {$accessToken}",
+            'Content-Type' => 'application/json',
+        ])->post($url, [
+                    'amount' => [
+                        'value' => number_format($amount, 2, '.', ''), // Đảm bảo giá trị tiền có 2 chữ số thập phân
+                        'currency_code' => 'USD', // Hoặc mã tiền tệ phù hợp
+                    ],
+                ]);
+
+        if ($response->successful()) {
+            return [
+                'status' => 'success',
+                'message' => 'Refund successful',
+            ];
+        }
+
+        return [
+            'status' => 'error',
+            'message' => 'Refund failed',
+        ];
+    }
+
+    protected function getPayPalAccessToken($clientId, $secret)
+    {
+        $auth = base64_encode("{$clientId}:{$secret}");
+
+        $response = Http::withHeaders([
+            'Authorization' => "Basic {$auth}",
+            'Content-Type' => 'application/x-www-form-urlencoded',
+        ])->asForm()->post('https://api-m.sandbox.paypal.com/v1/oauth2/token', [
+                    'grant_type' => 'client_credentials',
+                ]);
+
+        if ($response->successful()) {
+            return $response->json()['access_token'];
+        }
+
+        return null; // Trả về null nếu không lấy được access token
+    }
+
 }
