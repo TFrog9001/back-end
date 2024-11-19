@@ -192,9 +192,13 @@ Route::group([
         Route::group([
             'prefix' => 'revenue',
         ], function () {
-            Route::get('', [RevenueController::class, 'revenueByYear']);
+            // Route cho thống kê chi tiết theo tháng
+            Route::get('', [RevenueController::class, 'getRevenueStatistics']);
+            Route::get('/statistics', [RevenueController::class, 'getStatistics']);
+
+
         });
-        
+
     });
 
     Route::group([

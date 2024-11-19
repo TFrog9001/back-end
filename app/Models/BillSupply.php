@@ -19,7 +19,7 @@ class BillSupply extends Model
     // Quan hệ với Bill
     public function bill()
     {
-        return $this->belongsTo(Bill::class);
+        return $this->belongsTo(Bill::class, 'bill_id');
     }
 
     // Quan hệ với Supply

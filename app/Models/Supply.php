@@ -22,6 +22,12 @@ class Supply extends Model
     // Quan hệ với BillSupply
     public function billSupplies()
     {
-        return $this->hasMany(BillSupply::class);
+        return $this->hasMany(BillSupply::class, 'supply_id');
+    }
+
+    public function importDetails()
+    {
+        return $this->hasMany(ImportReceiptDetail::class, 'item_id')
+            ->where('item_type', 'supply');
     }
 }
