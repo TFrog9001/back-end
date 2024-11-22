@@ -76,6 +76,7 @@ Route::group([
             function () {
                 Route::get('', [UserController::class, 'index']);
                 Route::get('/customers', [UserController::class, 'getCustomers']);
+                Route::get('/staffs', [UserController::class, 'getStaffs']);
 
                 Route::get('/{id}', [UserController::class, 'show']);
                 Route::post('', [UserController::class, 'addUser']);
