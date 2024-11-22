@@ -43,9 +43,4 @@ class Booking extends Model
     {
         return $this->belongsTo(Bill::class, 'id', 'booking_id');
     }
-
-    public function bills()
-    {
-        return $this->hasMany(Bill::class, 'booking_id');
-    }
 }

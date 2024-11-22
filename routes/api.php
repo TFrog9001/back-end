@@ -4,6 +4,7 @@ use App\Http\Controllers\BillController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\FieldPriceController;
 use App\Http\Controllers\ImportReceiptController;
+use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RevenueController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ServiceController;
@@ -89,6 +90,29 @@ Route::group([
             ],
             function () {
                 Route::get('', [RoleController::class, 'index']);
+
+                Route::post('', [RoleController::class, 'createRoleWithPermissions']);
+                Route::post('/{roleId}', [RoleController::class, 'updateRole']);
+
+                // Lấy danh sách vai trò và quyền
+                Route::get('', [RoleController::class, 'getRolesWithPermissions']);
+
+                // Gán quyền cho vai trò
+                Route::post('/{roleId}/permissions', [RoleController::class, 'assignPermissionsToRole']);
+
+                // Thu hồi quyền từ vai trò
+                Route::post('/{roleId}/revoke-permissions', [RoleController::class, 'revokePermissionsFromRole']);
+
+                // Xóa vai trò
+                Route::delete('/{roleId}', [RoleController::class, 'deleteRole']);
+            }
+        );
+        Route::group(
+            [
+                'prefix' => 'permissions',
+            ],
+            function () {
+                Route::get('', [PermissionController::class, 'index']);
             }
         );
 
