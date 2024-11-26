@@ -41,6 +41,14 @@ class Booking extends Model
 
     public function bill()
     {
-        return $this->belongsTo(Bill::class, 'id', 'booking_id');
+        return $this->hasOne(Bill::class, 'booking_id', 'id');
     }
+
+    // Booking.php (Model)
+    public function comment()
+    {
+        return $this->hasOne(Comment::class);
+    }
+
+
 }

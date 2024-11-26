@@ -30,9 +30,11 @@ class BookingController extends Controller
             })
             ->when($request->status, function ($query, $status) {
                 if ($status === 'nofail') {
-                    return $query->where('status', '!=', 'Hủy');
+                    return $query->where('status', '!=', 'Hủy')
+                        ->whereNotIn('status', ['Đã hoàn tiền', 'Hoàn tiền']);
                 }
-                return $query->where('status', $status);
+                return $query->where('status', $status)
+                    ->whereNotIn('status', ['Đã hoàn tiền', 'Hoàn tiền']);
             })
             ->get();
 
@@ -51,10 +53,14 @@ class BookingController extends Controller
      */
     public function show($id)
     {
-        $booking = Booking::with(['field', 'user', 'bill.supplies.supply', 'bill.services.staff', 'bill.services.service'])->find($id);
+        $booking = Booking::with(['field', 'user', 'bill.supplies.supply', 'bill.services.staff', 'bill.services.service', 'comment'])->find($id);
 
         if (!$booking) {
             return response()->json(['message' => 'Booking not found'], 404);
+        }
+
+        if ($booking->comment && $booking->comment->hidden) {
+            $booking->comment = null; // Nếu comment bị ẩn, không trả về comment
         }
 
         return response()->json($booking);
@@ -87,6 +93,7 @@ class BookingController extends Controller
         return !Booking::where('field_id', $field_id)
             ->where('booking_date', $booking_date)
             ->where('status', '!=', 'Hủy')
+            ->whereNotIn('status', ['Đã hoàn tiền', 'Hoàn tiền']) 
             ->where(function ($query) use ($start_time, $end_time) {
                 $query->where(function ($q) use ($start_time) {
                     $q->where('start_time', '<=', $start_time)
@@ -307,55 +314,54 @@ class BookingController extends Controller
             return response()->json(['message' => 'Không tìm thấy booking'], 404);
         }
 
-        // Lấy thời gian bắt đầu của booking và ngày đặt
-        $bookingStartTime = strtotime($booking->booking_date . ' ' . $booking->start_time);
+        $bill = $booking->bill; // Lấy hóa đơn liên quan
 
-        // Lấy thời gian hiện tại
+        // Thực hiện logic hủy booking như trước đây
+        $bookingStartTime = strtotime($booking->booking_date . ' ' . $booking->start_time);
         $currentTime = time();
 
-        // Kiểm tra nếu booking bị hủy ít nhất 1 giờ trước khi bắt đầu trận đấu
-        if ($bookingStartTime - $currentTime >= 3600) {  // 3600 giây = 1 giờ
-            // Nếu payment_type là paypal, thực hiện hoàn tiền
+        if ($bookingStartTime - $currentTime >= 3600) {
             if ($booking->payment_type === 'paypal') {
                 try {
                     $refundSuccess = $this->refundPayment($booking->paypal_id);
                     if ($refundSuccess) {
-                        $booking->status = 'Hủy';
+                        $booking->status = 'Đã hoàn tiền';
+                        if ($bill) {
+                            $bill->status = 'Đã hoàn tiền';
+                            $bill->save();
+                        }
                         $booking->save();
 
-                        return response()->json([
-                            'message' => 'Booking đã bị hủy và hoàn tiền thành công.',
-                        ], 200);
+                        return response()->json(['message' => 'Booking đã bị hủy và hoàn tiền thành công.'], 200);
                     } else {
-                        return response()->json([
-                            'message' => 'Không thể xử lý hoàn tiền.',
-                        ], 500);
+                        return response()->json(['message' => 'Không thể xử lý hoàn tiền.'], 500);
                     }
                 } catch (Exception $e) {
-                    return response()->json([
-                        'message' => 'Đã xảy ra lỗi trong quá trình hoàn tiền.',
-                        'error' => $e->getMessage(),
-                    ], 500);
+                    return response()->json(['message' => 'Đã xảy ra lỗi trong quá trình hoàn tiền.', 'error' => $e->getMessage()], 500);
                 }
             } else {
-                // Nếu không phải thanh toán bằng PayPal, chỉ thay đổi trạng thái
-                $booking->status = 'Hủy';
+                $booking->status = 'Hoàn tiền';
+                if ($bill) {
+                    $bill->status = 'Hoàn tiền';
+                    $bill->save();
+                }
                 $booking->save();
 
-                return response()->json([
-                    'message' => 'Booking đã bị hủy thành công.',
-                ], 200);
+                return response()->json(['message' => 'Booking đã bị hủy thành công. Bạn cần liên hệ với văn phòng để hoàn tiền.'], 200);
             }
         } else {
-            // Nếu hủy trong vòng 1 giờ trước khi bắt đầu trận đấu, không hoàn cọc
             $booking->status = 'Hủy';
+            if ($bill) {
+                $bill->status = 'Hủy';
+                $bill->save();
+            }
             $booking->save();
 
-            return response()->json([
-                'message' => 'Booking đã bị hủy. Không hoàn tiền cọc trong vòng 1 giờ trước giờ đá.',
-            ], 200);
+            return response()->json(['message' => 'Booking đã bị hủy. Không hoàn tiền cọc trong vòng 1 giờ trước giờ đá.'], 200);
         }
     }
+
+
 
     protected function refundPayment($paypalId)
     {

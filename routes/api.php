@@ -8,6 +8,7 @@ use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RevenueController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\CommentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -233,7 +234,15 @@ Route::group([
     });
 });
 
-
+Route::group([
+    // 'middleware' => ['api','auth:api'], 
+], function () {
+    Route::get('/reviews', [CommentController::class, 'reviews']);
+    Route::get('/bookings/{bookingId}/comments', [CommentController::class, 'index']);
+    Route::post('/comments', [CommentController::class, 'store']);
+    Route::put('/comments/{id}', [CommentController::class, 'update']);
+    Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
+});
 
 
 
