@@ -9,6 +9,8 @@ use App\Models\Bill;
 use App\Models\Service;
 use App\Models\BillService;
 
+use App\Services\SmsService;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
@@ -16,6 +18,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Exception;
+
 
 class BookingController extends Controller
 {
@@ -93,7 +96,7 @@ class BookingController extends Controller
         return !Booking::where('field_id', $field_id)
             ->where('booking_date', $booking_date)
             ->where('status', '!=', 'Hủy')
-            ->whereNotIn('status', ['Đã hoàn tiền', 'Hoàn tiền']) 
+            ->whereNotIn('status', ['Đã hoàn tiền', 'Hoàn tiền'])
             ->where(function ($query) use ($start_time, $end_time) {
                 $query->where(function ($q) use ($start_time) {
                     $q->where('start_time', '<=', $start_time)
@@ -213,6 +216,7 @@ class BookingController extends Controller
                 $deposit = $totalPrice * 0.4;
             } else if ($request->payment_method == "none") {
                 $status = "Đã đặt";
+                $request->merge(['payment_type' => 'direct']);
             }
             // Tạo mới booking
             $booking = Booking::create([
@@ -248,6 +252,10 @@ class BookingController extends Controller
                 ]);
                 $billService->save();
             }
+
+            $smsService = new SmsService();  // Giả sử bạn đã tạo dịch vụ SmsService
+            $smsService->sendBookingConfirmation($booking->id, $booking->user->phone, $booking->field->name, $booking->booking_date, $booking->start_time, $booking->end_time);
+
 
             DB::commit();
             return response()->json($booking, 201);
@@ -309,7 +317,7 @@ class BookingController extends Controller
     public function cancel($id)
     {
         $booking = Booking::findOrFail($id);
-
+        $smsService = new SmsService();
         if (!$booking) {
             return response()->json(['message' => 'Không tìm thấy booking'], 404);
         }
@@ -332,6 +340,7 @@ class BookingController extends Controller
                         }
                         $booking->save();
 
+                        $smsService->sendCancellationWithRefund($booking->user->phone);
                         return response()->json(['message' => 'Booking đã bị hủy và hoàn tiền thành công.'], 200);
                     } else {
                         return response()->json(['message' => 'Không thể xử lý hoàn tiền.'], 500);
@@ -339,7 +348,7 @@ class BookingController extends Controller
                 } catch (Exception $e) {
                     return response()->json(['message' => 'Đã xảy ra lỗi trong quá trình hoàn tiền.', 'error' => $e->getMessage()], 500);
                 }
-            } else {
+            } else if ($booking->payment_type === 'zalopay') {
                 $booking->status = 'Hoàn tiền';
                 if ($bill) {
                     $bill->status = 'Hoàn tiền';
@@ -347,6 +356,20 @@ class BookingController extends Controller
                 }
                 $booking->save();
 
+                $smsService->sendCancellationWithError($booking->user->phone);
+                return response()->json(['message' => 'Booking đã bị hủy thành công. Bạn cần liên hệ với văn phòng để hoàn tiền.'], 200);
+            } else if ($booking->payment_type === 'direct') {
+                if ($booking->deposit == 0) {
+                    $booking->status = 'Đã hoàn tiền';
+                    $bill->status = 'Đã hoàn tiền';
+                    $bill->save();
+                } else {
+                    $booking->status = 'Hoàn tiền';
+                    $bill->status = 'Hoàn tiền';
+                    $bill->save();
+                }
+                $booking->save();
+                $smsService->sendCancellationWithError($booking->user->phone);
                 return response()->json(['message' => 'Booking đã bị hủy thành công. Bạn cần liên hệ với văn phòng để hoàn tiền.'], 200);
             }
         } else {
@@ -356,6 +379,7 @@ class BookingController extends Controller
                 $bill->save();
             }
             $booking->save();
+            $smsService->sendCancellationWithNoRefund($booking->user->phone);
 
             return response()->json(['message' => 'Booking đã bị hủy. Không hoàn tiền cọc trong vòng 1 giờ trước giờ đá.'], 200);
         }

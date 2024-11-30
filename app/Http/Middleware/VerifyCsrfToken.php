@@ -12,6 +12,7 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        //
+        '/botman',           // Nếu dùng URL này
+        'api/botman',
     ];
 }

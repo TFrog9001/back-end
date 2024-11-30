@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\BotManController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -16,3 +18,15 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+
+use BotMan\BotMan\BotMan;
+use BotMan\BotMan\Drivers\DriverManager;
+
+Route::match(['get', 'post'], '/botman', [BotManController::class, 'handle']);
+
+Route::get('/botman', function () {
+    return view('chatbot');
+});
+
+

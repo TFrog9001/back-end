@@ -23,7 +23,7 @@ class ServiceController extends Controller
             return $service;
         })->filter(function ($service) {
             return $service->staffs->isNotEmpty();
-        })->values(); // Reset các key trong collection
+        })->values();
 
         return response()->json($services);
     }

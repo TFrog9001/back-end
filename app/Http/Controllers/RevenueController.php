@@ -50,7 +50,7 @@ class RevenueController extends Controller
         $revenueFromFields = Bill::query()
             ->join('bookings', 'bills.booking_id', '=', 'bookings.id')
             ->selectRaw('MONTH(bookings.created_at) as month, SUM(bookings.field_price) as field_revenue')
-            ->whereYear('bills.created_at', $year)
+            ->whereYear('bookings.booking_date', $year)
             ->groupByRaw('MONTH(bookings.created_at)')
             ->pluck('field_revenue', 'month');
 
@@ -199,7 +199,7 @@ class RevenueController extends Controller
         // Lấy tất cả các `bill_service` trong tháng
         $billServices = BillService::query()
             ->whereHas('bill.booking', function ($query) use ($formattedDate) {
-                $query->whereRaw("DATE_FORMAT(start_time, '%Y-%m') = ?", [$formattedDate]);
+                $query->whereRaw("DATE_FORMAT(booking_date, '%Y-%m') = ?", [$formattedDate]);
             })
             ->with(['service', 'bill.booking'])
             ->get();
@@ -219,7 +219,7 @@ class RevenueController extends Controller
 
                 return $hours * $service->fee; // Tính doanh thu: số giờ * phí theo giờ
             });
-
+    
             return [
                 'service_name' => $service->service,
                 'total_revenue' => $totalRevenue,
@@ -234,7 +234,7 @@ class RevenueController extends Controller
 
         // Tính lợi nhuận từ tiền cọc của các đơn bị hủy
         $totalDepositFromCanceledBookings = Booking::query()
-            ->whereRaw("DATE_FORMAT(start_time, '%Y-%m') = ?", [$formattedDate])
+            ->whereRaw("DATE_FORMAT(booking_date, '%Y-%m') = ?", [$formattedDate])
             ->where('status', 'Hủy')
             ->sum('deposit'); // Giả sử tiền cọc được lưu trong trường `deposit`
 
@@ -274,6 +274,7 @@ class RevenueController extends Controller
 
         // Tổng doanh thu
         $totalRevenue = Bill::whereYear('created_at', $year)
+            ->where('status', 'like', 'Đã thanh toán')
             ->sum('total_amount');
 
         // Số khách hàng mới

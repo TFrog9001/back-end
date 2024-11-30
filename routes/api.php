@@ -32,6 +32,11 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\BookingConversationController;
 use App\Http\Controllers\GeneralConversationController;
+// use App\Http\Controllers\BotManController;
+
+
+// Route::post('/botman', [BotManController::class, 'handle']);
+
 
 Route::post('/auth/register', [UserController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);

@@ -40,9 +40,11 @@ class BillController extends Controller
             $billSupplies = [];
 
             DB::transaction(function () use ($request, &$billSupplies) {
-                $bill = Bill::findOrFail($request->input('bill_id'));
+                $bill = Bill::with('booking')->findOrFail($request->input('bill_id'));
 
                 $total_amount = 0;
+                $productDetails = []; // Mảng chứa tên sản phẩm và số lượng
+
                 foreach ($request->input('items') as $itemData) {
                     $supply = Supply::findOrFail($itemData['id']);
 
@@ -73,6 +75,9 @@ class BillController extends Controller
 
                     $total_amount += $itemData['quantity'] * $supply->price;
 
+                    // Thêm tên sản phẩm và số lượng vào mảng productDetails
+                    $productDetails[] = "{$supply->name} (x{$itemData['quantity']})";
+
                     // Thêm thông tin vào mảng billSupplies
                     $billSupplies[] = [
                         'supply_id' => $supply->id,
@@ -89,7 +94,9 @@ class BillController extends Controller
                 $bill->total_amount += $total_amount;
                 $bill->save();
 
-                $message = "Người dùng đã thêm sản phẩm vào hóa đơn #{$bill->id}. Tổng tiền mới: " . number_format($bill->total_amount) . " VND";
+                // Tạo thông báo với tên sản phẩm và số lượng đã thêm
+                $productDetailsList = implode(', ', $productDetails); // Nối tên sản phẩm và số lượng thành chuỗi
+                $message = "Người dùng đã thêm sản phẩm: {$productDetailsList} vào phiếu #{$bill->booking->id}. Tổng tiền mới: " . number_format($bill->total_amount) . " VND";
                 broadcast(new NotificationSent($message))->toOthers();
             });
 
@@ -101,6 +108,7 @@ class BillController extends Controller
             return response()->json(['message' => 'Có lỗi xảy ra: ' . $e->getMessage()], 500);
         }
     }
+
 
     public function createBill($id)
     {

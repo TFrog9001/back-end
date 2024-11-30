@@ -15,26 +15,46 @@ class UserController extends Controller
 {
     public function register(Request $request)
     {
+        // Xác thực dữ liệu đầu vào
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
+            'phone' => 'required|string',  // Không kiểm tra uniqueness nữa vì sẽ kiểm tra sau
             'password' => 'required|string|min:8|confirmed',
         ]);
 
+        // Kiểm tra nếu validation thất bại
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role_id' => 3,
-        ]);
+        // Kiểm tra nếu số điện thoại đã tồn tại trong cơ sở dữ liệu
+        $user = User::where('phone', $request->phone)->first();
 
-        return response()->json([
-            'message' => 'User registered successfully!',
-        ], 201);
+        if ($user) {
+            // Nếu người dùng đã tồn tại, cập nhật thông tin của họ
+            $user->name = $request->name;
+            $user->email = $request->email;
+            $user->password = Hash::make($request->password); // Cập nhật mật khẩu
+            $user->save(); // Lưu lại thông tin đã cập nhật
+
+            return response()->json([
+                'message' => 'User information updated successfully!',
+            ], 200);
+        } else {
+            // Nếu không tồn tại, tạo mới người dùng
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'password' => Hash::make($request->password),
+                'role_id' => 3,
+            ]);
+
+            return response()->json([
+                'message' => 'User registered successfully!',
+            ], 201);
+        }
     }
 
     public function index()
@@ -150,7 +170,7 @@ class UserController extends Controller
         $user->name = $request->name;
         $user->email = $request->email;
         $user->phone = $request->phone;
-        $user->role_id = $request->role;
+        $user->role_id = $request->role ?? $request->role_id;
         $user->save();
 
         return response()->json([
