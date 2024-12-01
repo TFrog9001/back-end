@@ -71,12 +71,12 @@ class PaymentController extends Controller
                 'end_time' => $request->end_time,
                 'field_id' => $request->field_id,
                 'user_id' => $request->user_id,
-                'user_name' => $request->user_name,
-                'user_phone' => $request->user_phone,
+                'user_name' => $request->user_name ?? null,
+                'user_phone' => $request->user_phone ?? null,
                 'payment_method' => $request->payment_method,
                 'services' => $request->services,
                 'payment_type' => 'zalopay',
-                'redirecturl' => "http://127.0.0.1:3002/booking"
+                'redirecturl' => "http://127.0.0.1:8000/thank"
             ];
         Log::error('embed_data_create' . json_encode($embeddata));
         $items = '[]';
@@ -189,7 +189,7 @@ class PaymentController extends Controller
         // Chuẩn bị dữ liệu cho ZaloPay
         $embeddata = [
             'bill_id' => $request->bill_id,
-            'redirecturl' => "http://127.0.0.1:3002/booking"
+            'redirecturl' => "http://127.0.0.1:8000/thank"
         ];
 
         Log::info('embed_data_create' . json_encode($embeddata));

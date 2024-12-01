@@ -19,6 +19,10 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/thank', function () {
+    return view('thank');
+});
+
 
 use BotMan\BotMan\BotMan;
 use BotMan\BotMan\Drivers\DriverManager;

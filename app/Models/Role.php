@@ -17,4 +17,9 @@ class Role extends Model
     {
         return $this->belongsToMany(Permission::class, 'role_has_permission');
     }
+
+    public function users()
+    {
+        return $this->hasMany(User::class, 'role_id', 'id'); // Đảm bảo bảng 'users' có cột 'role_id'
+    }
 }
