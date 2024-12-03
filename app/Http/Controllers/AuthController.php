@@ -6,7 +6,11 @@ use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Exceptions\JWTException;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
 
+
+use App\Services\SmsService;
 use App\Services\GoogleLoginService;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -15,10 +19,27 @@ use App\Models\User;
 class AuthController extends Controller
 {
     protected $googleLoginService;
-    public function __construct(GoogleLoginService $googleLoginService)
+
+    protected $smsService;
+
+    public function __construct(GoogleLoginService $googleLoginService, SmsService $smsService)
     {
-        $this->middleware('auth:api', ['except' => ['login', 'refresh', 'checkRefreshTokenExpiration', 'redirectToGoogle', 'handleGoogleCallback','handleFacebookCallback']]);
+        $this->middleware('auth:api', [
+            'except' => [
+                'login',
+                'refresh',
+                'checkRefreshTokenExpiration',
+                'redirectToGoogle',
+                'handleGoogleCallback',
+                'handleFacebookCallback'
+                ,
+                'sendOtpForResetPassword',
+                'verifyOtpForResetPassword',
+                'resetPassword'
+            ]
+        ]);
         $this->googleLoginService = $googleLoginService;
+        $this->smsService = $smsService;
     }
 
 
@@ -194,4 +215,97 @@ class AuthController extends Controller
     {
         return $this->googleLoginService->handleGoogleCallback();
     }
+
+
+    public function sendOtpForResetPassword(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|string|exists:users,phone',
+        ]);
+
+
+        $phone = $request->phone;
+        $otp = rand(100000, 999999); // Tạo mã OTP gồm 6 chữ số
+        // $otp = 123456;
+
+        // Lưu OTP vào cache với thời gian sống là 5 phút
+        Cache::put('otp_reset_password_' . $phone, $otp, 300);
+
+        // Gửi OTP qua SMS
+        $message = "Mã OTP để đặt lại mật khẩu của bạn là: {$otp}. Mã sẽ hết hạn sau 5 phút.";
+        try {
+            $this->smsService->sendSmsWithRateLimit($phone, $message);
+            return response()->json(['message' => 'Mã OTP đã được gửi.'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
+        }
+    }
+
+    public function verifyOtpForResetPassword(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|numeric|exists:users,phone',
+            'otp' => 'required|numeric',
+        ]);
+
+        $phone = $request->phone;
+        $otp = $request->otp;
+
+        // Kiểm tra OTP từ cache
+        $cachedOtp = Cache::get('otp_reset_password_' . $phone);
+
+        if ($cachedOtp && $cachedOtp == $otp) {
+            // Xóa OTP sau khi xác thực thành công
+            Cache::forget('otp_reset_password_' . $phone);
+
+            // Tạo token reset mật khẩu (có thể lưu vào bảng `password_resets` hoặc JWT)
+            $resetToken = bin2hex(random_bytes(32));
+
+            // Lưu token vào Cache để liên kết với số điện thoại
+            $cacheKey = 'reset_token_' . $phone;
+            $tokenTTL = 900; // Thời gian sống 15 phút (900 giây)
+            Cache::put($cacheKey, $resetToken, $tokenTTL);
+
+            // Trả token cho client để sử dụng đặt lại mật khẩu
+            return response()->json(['reset_token' => $resetToken], 200);
+        }
+
+        return response()->json(['message' => 'Mã OTP không đúng hoặc đã hết hạn.'], 400);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        \Log::info($request);
+
+        $request->validate([
+            'phone' => 'required|string|exists:users,phone',
+            'reset_token' => 'required',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $phone = $request->phone;
+        $resetToken = $request->reset_token;
+
+
+        // Lấy token từ Cache
+        $cachedToken = Cache::get('reset_token_' . $phone);
+
+        \Log::info($cachedToken);
+
+        if ($cachedToken && $cachedToken == $resetToken) {
+            // Xóa token sau khi sử dụng
+            Cache::forget('reset_token_' . $phone);
+
+            // Cập nhật mật khẩu người dùng
+            $user = User::where('phone', $phone)->first();
+            $user->password = Hash::make($request->new_password);
+            $user->save();
+
+            return response()->json(['message' => 'Đặt lại mật khẩu thành công.'], 200);
+        }
+
+        return response()->json(['message' => 'Token không hợp lệ hoặc đã hết hạn.'], 400);
+    }
+
+
 }

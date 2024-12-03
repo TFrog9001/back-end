@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use HTTP_Request2;
 
 class SmsService
@@ -41,7 +42,7 @@ class SmsService
     }
 
     private function sendSms($phone, $message)
-    {   
+    {
 
         $formattedPhone = $this->formatPhoneNumber($phone);
         // Tạo một đối tượng HTTP_Request2
@@ -69,7 +70,7 @@ class SmsService
                         ['to' => $formattedPhone],
                     ],
                     'from' => '447491163443',
-                    'text' => $message,
+                    'text' => trim($message),
                 ],
             ],
         ]));
@@ -85,5 +86,21 @@ class SmsService
         } catch (\HTTP_Request2_Exception $e) {
             throw new \Exception('Error: ' . $e->getMessage());
         }
+    }
+
+    public function sendSmsWithRateLimit($phone, $message)
+    {
+        $formattedPhone = $this->formatPhoneNumber($phone);
+        $cacheKey = 'sms_limit_' . $formattedPhone;
+        $limit = 3; // Số lần tối đa
+        $duration = 3600; // Thời gian giới hạn (giây)
+
+        $attempts = Cache::get($cacheKey, 0);
+        if ($attempts >= $limit) {
+            throw new \Exception('Bạn đã vượt quá số lần gửi tin nhắn trong một giờ.');
+        }
+
+        Cache::put($cacheKey, $attempts + 1, $duration);
+        $this->sendSms($phone, $message);
     }
 }

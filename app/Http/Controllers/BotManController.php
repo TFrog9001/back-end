@@ -44,8 +44,13 @@ class BotManController extends Controller
 
                 $user = User::find($user_id);
 
+                if($user){
+                    $botman->reply("Xin chào, <b>{$user->name}</b>!");
+                }
+                else {
+                    $botman->reply("Xin chào, bạn cần đăng nhập để sử dụng nhiều chức năng hơn!");
+                }
 
-                $botman->reply("Xin chào, <b>{$user->name}</b>!");
             } else {
                 $botman->reply("Xin lỗi, tôi không hiểu yêu cầu của bạn. Bạn có thể nói 'đặt sân' để bắt đầu hoặc 'chào' để chào hỏi.");
             }

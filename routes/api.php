@@ -46,6 +46,9 @@ Route::post('/zalopay/callback', [PaymentController::class, 'zalopayCallback']);
 Route::post('/zalopay/callbackBill', [PaymentController::class, 'zalopayCallbackBill']);
 Route::get('/auth/google', [AuthController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
+Route::post('/auth/forgot-password/send-otp', [AuthController::class, 'sendOtpForResetPassword']);
+Route::post('/auth/forgot-password/verify-otp', [AuthController::class, 'verifyOtpForResetPassword']);
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 
 Route::group([
     // 'middleware' => ['api','auth:api'], 
@@ -60,6 +63,7 @@ Route::group([
         function () {
             Route::post('/logout', [AuthController::class, 'logout']);
             Route::get('/me', [AuthController::class, 'me']);
+
             Route::post('/check/time', [AuthController::class, 'checkRefreshTokenExpiration']);
 
         }
