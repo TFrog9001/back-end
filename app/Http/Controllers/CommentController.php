@@ -20,6 +20,7 @@ class CommentController extends Controller
     public function reviews()
     {
         $comments = Comment::with('user')
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return response()->json($comments);
@@ -106,7 +107,7 @@ class CommentController extends Controller
         $comment->update([
             'rate' => $validated['rate'] ?? $comment->rate,
             'content' => $validated['content'] ?? $comment->content,
-            'isEdit' => true,
+            'isEdit' => !$comment->hidden,
             'hidden' => $comment->hidden,
         ]);
 

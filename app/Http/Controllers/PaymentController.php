@@ -8,6 +8,7 @@ use App\Http\Controllers\BookingController;
 use App\Models\Bill;
 use App\Models\Booking;
 use App\Models\Service;
+use App\Models\User;
 
 class PaymentController extends Controller
 {
@@ -91,7 +92,7 @@ class PaymentController extends Controller
             "amount" => $amount,
             "description" => " Thanh toán $title #$transID",
             "bank_code" => "zalopayapp",
-            "callback_url" => "https://mlatbooking.serveo.net/api/zalopay/callback",
+            "callback_url" => "https://mlatbooking.loca.lt/api/zalopay/callback",
         ];
 
         // appid|app_trans_id|appuser|amount|apptime|embeddata|item
@@ -182,7 +183,7 @@ class PaymentController extends Controller
         // Nếu booking đã thanh toán, không cộng phí sân vào tổng tiền
         // $totalAmount = $suppliesTotal + $servicesTotal;
         $totalAmount = $bill->total_amount;
-        
+
         // Trừ khoản đặt cọc nếu có
         $amount = max(0, $totalAmount - $deposit);
 
@@ -207,7 +208,7 @@ class PaymentController extends Controller
             "amount" => $amount,
             "description" => "Thanh toán hóa đơn #$transID",
             "bank_code" => "zalopayapp",
-            "callback_url" => "https://mlatbooking.serveo.net/api/zalopay/callbackBill",
+            "callback_url" => "https://mlatbooking.loca.lt/api/zalopay/callbackBill",
         ];
 
         // Tạo chữ ký cho ZaloPay
@@ -264,6 +265,34 @@ class PaymentController extends Controller
                 $booking->save();
                 $bill->save();
                 Log::info($bill);
+
+                $user = User::findOrFail($booking->user_id);
+
+                \Log::info($user);
+
+                // Kiểm tra điều kiện 10 lần đặt phòng liên tiếp "Đã thanh toán" và không có "Hủy"
+                $recentBookings = Booking::where('user_id', $user->id)
+                    ->orderBy('created_at', 'desc') // Lấy danh sách đặt phòng mới nhất
+                    ->take(10)                     // Lấy 10 lần đặt phòng gần nhất
+                    ->get();
+
+                $validStatuses = ["Đã thanh toán", "Đã hoàn tiền", "Hoàn tiền", "Đã đặt", "Đã cọc"];
+
+                // Kiểm tra nếu tất cả 10 lần đặt phòng đều "Đã thanh toán" và không có "Hủy"
+                $allPaid = $recentBookings->every(function ($booking) use ($validStatuses) {
+                    return in_array($booking->status, $validStatuses);
+                });
+
+                $noCancelled = !$recentBookings->contains(function ($booking) {
+                    return $booking->status === "Hủy";
+                });
+
+                if ($recentBookings->count() == 10 && $allPaid && $noCancelled) {
+                    \Log::info($allPaid);
+                    \Log::info($noCancelled);
+                    $user->vip = 1; // Cập nhật trạng thái VIP
+                    $user->save();
+                }
 
                 $result["return_code"] = 1;
                 $result["return_message"] = "success";

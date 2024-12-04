@@ -7,6 +7,7 @@ use App\Models\Bill;
 use App\Models\Supply;
 use App\Models\BillSupply;
 use App\Models\Booking;
+use App\Models\User;
 
 use App\Events\NotificationSent;
 
@@ -125,21 +126,55 @@ class BillController extends Controller
     public function paymentBill($id)
     {
         try {
+            // Tìm bill dựa vào ID
             $bill = Bill::findOrFail($id);
 
+            // Tìm booking tương ứng với bill
             $booking = Booking::findOrFail($bill->booking_id);
 
+            // Cập nhật trạng thái của booking và bill
             $booking->status = "Đã thanh toán";
             $bill->status = "Đã thanh toán";
 
             $booking->save();
             $bill->save();
-            return response()->json($bill, 201);
+
+            // Lấy user từ booking
+            $user = User::findOrFail($booking->user_id);
+
+            \Log::info($user);
+
+            // Kiểm tra điều kiện 10 lần đặt phòng liên tiếp "Đã thanh toán" và không có "Hủy"
+            $recentBookings = Booking::where('user_id', $user->id)
+                ->orderBy('created_at', 'desc') // Lấy danh sách đặt phòng mới nhất
+                ->take(10)                     // Lấy 10 lần đặt phòng gần nhất
+                ->get();
+
+            $validStatuses = ["Đã thanh toán", "Đã hoàn tiền", "Hoàn tiền", "Đã đặt", "Đã cọc"];
+
+            // Kiểm tra nếu tất cả 10 lần đặt phòng đều "Đã thanh toán" và không có "Hủy"
+            $allPaid = $recentBookings->every(function ($booking) use ($validStatuses) {
+                return in_array($booking->status, $validStatuses);
+            });
+
+            $noCancelled = !$recentBookings->contains(function ($booking) {
+                return $booking->status === "Hủy";
+            });
+
+            if ($recentBookings->count() == 10 && $allPaid && $noCancelled) {
+                \Log::info($allPaid);
+                \Log::info($noCancelled);
+                $user->vip = 1; // Cập nhật trạng thái VIP
+                $user->save();
+            }
+
+            return response()->json([$bill, $user, $recentBookings->count(), $allPaid, $noCancelled], 201);
+
         } catch (\Exception $e) {
             return response()->json(['message' => 'Có lỗi xảy ra: ' . $e->getMessage()], 500);
-
         }
     }
+
 
     ///
 

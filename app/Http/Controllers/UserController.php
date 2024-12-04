@@ -139,7 +139,7 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email,' . $id,
             'phone' => 'nullable|string|regex:/^\d{10}$/',
             'password' => 'nullable|string|min:8|confirmed',
-            'avatar' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'avatar' => 'nullable',
         ]);
 
         if ($validator->fails()) {

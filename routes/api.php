@@ -53,7 +53,6 @@ Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 Route::group([
     // 'middleware' => ['api','auth:api'], 
 ], function () {
-
     Route::post('/send-message', [ChatController::class, 'sendMessage']);
     Route::post('/chat/send', [ChatController::class, 'send']);
     Route::group(
